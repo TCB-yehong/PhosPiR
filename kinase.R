@@ -75,7 +75,7 @@ data_merge <- unique(merge(input_data, pwm_pval, by = "annotation"))
 datakinnet=c()
 for (j in 1:nrow(data_merge)) {
 for (k in 6:ncol(data_merge)) {
-if (data_merge[j,k]==1) {
+if (!is.na(data_merge[j,k])&data_merge[j,k]==1) {
 datakinnet=rbind(datakinnet,cbind(colnames(data_merge)[k],data_merge[j,c("annotation","fc","pval")]))
 }
 }}

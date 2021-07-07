@@ -361,13 +361,13 @@ wc=function(pair,compareinfo,data,i) {
 grp1=compareinfo[2]==names(table(compareinfo[2]))[1]
 grp2=compareinfo[2]==names(table(compareinfo[2]))[2]
 if (pair==2) {
-wcres=apply(log2(data+1),1,FUN=function(x) tryCatch(wilcox.test(x[compareinfo[1][grp1]],x[compareinfo[1][grp2]])$p.value,error=function(err) 1))
+wcres=apply(log2(data),1,FUN=function(x) tryCatch(wilcox.test(x[compareinfo[1][grp1]],x[compareinfo[1][grp2]])$p.value,error=function(err) 1))
 wcresad=p.adjust(as.numeric(wcres),method="BH")
 wcdf=data.frame(wcpval=wcres,wcfdr=wcresad)
 colnames(wcdf)=c(paste0("Comparison",i,"_Wilcox-test_Pvalue"),paste0("Comparison",i,"_Wilcox-test_FDR"))
 return(wcdf)
 } else{
-wcres=apply(log2(data+1),1,FUN=function(x) tryCatch(wilcox.test(x[compareinfo[1][grp1]],x[compareinfo[1][grp2]],paired=T)$p.value,error=function(err) 1))
+wcres=apply(log2(data),1,FUN=function(x) tryCatch(wilcox.test(x[compareinfo[1][grp1]],x[compareinfo[1][grp2]],paired=T)$p.value,error=function(err) 1))
 wcresad=p.adjust(as.numeric(wcres),method="BH")
 wcdf=data.frame(wcpval=wcres,wcfdr=wcresad)
 colnames(wcdf)=c(paste0("Comparison",i,"_Wilcox-test_Pvalue"),paste0("Comparison",i,"_Wilcox-test_FDR"))
@@ -380,12 +380,12 @@ if (!require(ROTS)) {BiocManager::install("ROTS",update=F,ask=F)}
 library(ROTS)
 
 if (pair==2) {
-rotsres=ROTS(log2(data[,compareinfo[,1]]+1),groups=compareinfo[,2],B=3000,K=nrow(data)/2)
+rotsres=ROTS(log2(data[,compareinfo[,1]]),groups=compareinfo[,2],B=3000,K=nrow(data)/2)
 rotsdf=data.frame(rotspval=rotsres$pvalue,rotsfdr=rotsres$FDR)
 colnames(rotsdf)=c(paste0("Comparison",i,"_ROTS_Pvalue"),paste0("Comparison",i,"_ROTS_FDR"))
 return(rotsdf)
 } else{
-rotsres=ROTS(log2(data[,compareinfo[,1]]+1),groups=compareinfo[,2],B=3000,K=nrow(data)/2,paired=T)
+rotsres=ROTS(log2(data[,compareinfo[,1]]),groups=compareinfo[,2],B=3000,K=nrow(data)/2,paired=T)
 rotsdf=data.frame(rotspval=rotsres$pvalue,rotsfdr=rotsres$FDR)
 colnames(rotsdf)=c(paste0("Comparison",i,"_ROTS_Pvalue"),paste0("Comparison",i,"_ROTS_FDR"))
 return(rotsdf)

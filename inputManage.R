@@ -213,7 +213,10 @@ if (impnorm=="Only normalize") {
 rtransifile=normalize_data_dm(rintfile,normalize_func = 'medianCentering',log_base = 2, offset = 1)
 rawdatafile[,7:ncol(rawdatafile)]=2^rtransifile
 } 
-if (impnorm=="Neither") { rawdatafile[,7:ncol(rawdatafile)]=rawdatafile[,7:ncol(rawdatafile)]+1 }
+if (impnorm=="Neither") { 
+if (sum(rawdatafile[,7:ncol(rawdatafile)]==0)>0) {
+rawdatafile[,7:ncol(rawdatafile)]=rawdatafile[,7:ncol(rawdatafile)]+1} 
+ }
 
 ################################################################################
 

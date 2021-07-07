@@ -41,13 +41,13 @@ a=x
 a$name=rownames(x)
 forgraph=melt(a,id.vars="name")
 l2=forgraph$value
-forgraph$Log2values=log2(l2+1)
+forgraph$Log2values=log2(l2)
 
 if (type=="heatmap") {
 if (nrow(x)>10000) {
 kmeansk=floor(nrow(x)/10)} else {kmeansk=NA}
 fname="Overview Figure/Overview_heatmap.tiff"
-hmp=pheatmap(log2(x+1),show_rownames=F,cluster_rows=F,kmeans_k=kmeansk,main="Data Overview - Log 2 Intensity",filename=fname,)
+hmp=pheatmap(log2(x),show_rownames=F,cluster_rows=F,kmeans_k=kmeansk,main="Data Overview - Log 2 Intensity",filename=fname,)
 }
 
 else if (type=="PCA") {
@@ -99,8 +99,7 @@ movie3d(spin3d(axis=c(0,0,1)), duration=7, fps=10, movie = moviename,dir=paste0(
 }
 
 else if (type=="histogram") {
-xmin=-1
-#xmin=10*floor(min(forgraph$Log2values[forgraph$Log2values>0])/10)
+xmin=floor(min(forgraph$Log2values))-1
 xmax=10*ceiling(max(forgraph$Log2values)/10)
 ymax=0
 for (i in 1:ncol(x)) {

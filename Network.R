@@ -200,7 +200,11 @@ allf=list.files(path="Kinase Analysis",pattern="*.csv")
 for (i in 1:length(allf[grep("significant_kinaseNetwork",allf)])) {
 tgtname=allf[grep("significant_kinaseNetwork",allf)][i]
 tempkinnw=read.csv(paste0("Kinase Analysis\\",tgtname),stringsAsFactors=F)
-if (nrow(tempkinnw)>10&nrow(tempkinnw)<500) {
+tempkinnw=tempkinnw[which(nchar(unlist(lapply(tempkinnw[,2],FUN=function(x) strsplit(x,"\\|")[[1]][4])))!=2),]
+if (nrow(tempkinnw)>250) {
+tempkinnw=tempkinnw[order(tempkinnw$Pvalue,decreasing=F),][1:250,]
+}
+if (nrow(tempkinnw)>10&nrow(tempkinnw)<251) {
 temppeplab=data.frame(matrix(unlist(strsplit(tempkinnw[,2],"\\||\\::")),ncol=5,byrow=T),stringsAsFactors=F)
 colnames(temppeplab)=c("accession","gene","position","seq","seq2")
 temppeplab$phoseq=substring(temppeplab$seq,ceiling(nchar(temppeplab$seq)/2),ceiling(nchar(temppeplab$seq)/2))
