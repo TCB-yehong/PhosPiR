@@ -1,5 +1,5 @@
 # PhosPiR
-An automatic pipeline to analyze phosphoproteomics.
+An automatic pipeline to analyze phosphoproteomics data.
 
 It is fully tested on Windows.
 
