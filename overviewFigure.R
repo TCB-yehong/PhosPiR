@@ -48,6 +48,8 @@ if (nrow(x)>10000) {
 kmeansk=floor(nrow(x)/10)} else {kmeansk=NA}
 fname="Overview Figure/Overview_heatmap.tiff"
 hmp=pheatmap(log2(x),show_rownames=F,cluster_rows=F,kmeans_k=kmeansk,main="Data Overview - Log 2 Intensity",filename=fname,)
+fname="Overview Figure/Overview_heatmap_rowClustered.tiff"
+hmp=pheatmap(log2(x),show_rownames=F,cluster_rows=T,kmeans_k=kmeansk,main="Data Overview - Log 2 Intensity",filename=fname,)
 }
 
 else if (type=="PCA") {

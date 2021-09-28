@@ -33,6 +33,16 @@ fname=dlg_open(title = "Select input file with correct format",multiple=F)$res
 }
 ################################################################################
 
+#######################run option###############################################
+#setup which step to run
+if (fileType=="MaxQaunt") {
+pipestep=dlgList(c("Generate Input File","Annotation","Overview Figures","Differential Analysis","All Steps"),
+title="Select which analysis to run")$res
+} else {
+pipestep=dlgList(c("Annotation","Overview Figures","Differential Analysis","All steps"),
+title="Select which analysis to run")$res}
+################################################################################
+
 #######################maxquant input formatting################################
 if (fileType=="MaxQaunt") {
 raw=read.delim(fname)
@@ -147,29 +157,29 @@ rawinfofile=rawinfofile[,c(1:rawinfofilecoln,which(cnasum<=mean(cnasum)+2*sd(cna
 
 #######################user setup options#######################################
 #setup organism
+if (pipestep!="Generate Input File"&pipestep!="Overview Figures") {
 phylo=dlgList(c("Homo sapiens","Mus musculus","Rattus norvegicus",
 "Saccharomyces cerevisiae","Caenorhabditis elegans","Danio rerio",
 "Drosophila melanogaster","Escherichia coli","Arabidopsis thaliana",
 "Other"),preselect="Homo sapien",title="Select data organism source")$res
 if(phylo=="Other") {phylo=dlgInput("Please enter organism scientific name: (Capitalize first 
-letter and nothing else, space between words)")$res}
+letter and nothing else, space between words)")$res}}
 
 #setup imputation and normalization
+if (pipestep!="Generate Input File"&pipestep!="Annotation") {
 impnorm=dlgList(c("Neither","Only normalize","Both normalize and impute"),
-title="Imputation and normalization")$res
-
-#setup which step to run
-pipestep=dlgList(c("Annotation","Overview Figures","Differential Analysis","All steps"),
-title="Select which analysis to run")$res
+title="Imputation and normalization")$res}
 ################################################################################
 
 #######################group setup##############################################
+if (pipestep!="Generate Input File"&pipestep!="Annotation") {
 source(paste0(codepth,"groupSetup.R"))
 group=grouping()
-grpcompare=grpcpare(group)
+grpcompare=grpcpare(group)}
 ################################################################################
 
 #######################normalization and imputation#############################
+if (pipestep!="Generate Input File"&pipestep!="Annotation") {
 msgBox("Now proceeding to normalization and imputation.")
 if (impnorm=="Both normalize and impute") {
 #dlgMessage("Caution with imputation, if there's time, another run without 
@@ -217,7 +227,7 @@ if (impnorm=="Neither") {
 if (sum(rawdatafile[,7:ncol(rawdatafile)]==0)>0) {
 rawdatafile[,7:ncol(rawdatafile)]=rawdatafile[,7:ncol(rawdatafile)]+1} 
  }
-
+}
 ################################################################################
 
 

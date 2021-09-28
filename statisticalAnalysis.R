@@ -245,10 +245,10 @@ rm(multicol)
 
 
 #calculate modified fc and modified pval
-volcnlogpval=-log2(volcpval)
+volcnlogpval=-log10(volcpval)
 volclogFC=rep(0,length(volcfc))
-volclogFC[volcfc>0]=log2(volcfc[volcfc>0])
-volclogFC[volcfc<0]=-log2(abs(volcfc[volcfc<0]))
+volclogFC[volcfc>0]=log10(volcfc[volcfc>0])
+volclogFC[volcfc<0]=-log10(abs(volcfc[volcfc<0]))
 #get sig cutoff & number of sigs
 #if both side < 50, include gene label, else not
 msgBox("Please choose fold change and p-value cutoff")
@@ -485,7 +485,7 @@ volcano <- ggplot(dataf,aes(logFC, nlogpval, color=lab, solid=F)) +
   theme(legend.position = "none") +
   theme(axis.text.x=element_text(size=14), axis.title.x=element_text(size=16),
         axis.text.y=element_text(size=14), axis.title.y=element_text(size=16)) +
-  xlab("Log2 Fold Change") + ylab("-Log2 P-value") +
+  xlab("Log10 Fold Change") + ylab("-Log10 P-value") +
   labs(colour="Comparison Group") +
   geom_vline(xintercept = log2(volcfccf),linetype="dashed") + geom_vline(xintercept = -log2(volcfccf),linetype="dashed") +
   geom_hline(yintercept = -log2(volcpvalcf),linetype="dashed") 
@@ -506,7 +506,7 @@ xdensity <- ggplot(dataf, aes(logFC, fill=lab)) +
 #  theme(legend.position = "none") +
   theme(axis.text.x=element_text(size=14), axis.title.x=element_text(size=16),
         axis.text.y=element_text(size=14), axis.title.y=element_text(size=16)) +
-  xlab("Log2 Fold Change") + ylab("Density") 
+  xlab("Log10 Fold Change") + ylab("Density") 
 xdensity
 # Marginal density plot of y (right panel)
 ydensity <- ggplot(dataf, aes(nlogpval, fill=lab)) + 
@@ -514,7 +514,7 @@ ydensity <- ggplot(dataf, aes(nlogpval, fill=lab)) +
   theme(legend.position = "none") +
   theme(axis.text.x=element_text(size=14), axis.title.x=element_text(size=16),
         axis.text.y=element_text(size=14), axis.title.y=element_text(size=16)) +
-  xlab("-Log2 P-value") + ylab("Density") 
+  xlab("-Log10 P-value") + ylab("Density") 
 ydensity
 
 blankPlot <- ggplot()+geom_blank(aes(1,1))+
