@@ -1,5 +1,7 @@
 # PhosPiR
 PhosPiR is an automatic pipeline to analyze phosphoproteomics data. It is fully tested on Windows.
+To initiate PhosPiR pipeline, drag the run.R file to an R window.
+R version 4.0.3 for Windows can be downloaded from https://cran.r-project.org/bin/windows/base/old/4.0.3/
 
 A few things to pay attention to:
 -Should have good internet connection
@@ -8,4 +10,8 @@ A few things to pay attention to:
 
 Two user support videos could be found at https://youtu.be/8qvEStg28dQ (short setup introduction video), and https://youtu.be/n4EagNoxusI (long pipeline run demonstration and result file introduction video).
 
-Example data from the video could be found in the Example Data folder.
+Example data from the videos with complementary group setup input file and comparison input file could be found in the Example Data folder.
+
+Text file containing R and R package versions during the development of PhosPiR can be found in Useful Information folder.
+A STRING interaction color key can also be found in the same folder.
+
