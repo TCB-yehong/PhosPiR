@@ -9,7 +9,7 @@ codepth=substr(codedr,1,gregexpr("\\\\",codedr)[[1]][length(gregexpr("\\\\",code
 #######################Running analysis#########################################
 source(paste0(codepth,"inputManage.R"))
 
-if (pipestep=="Generate Input File") { 
+if (pipestep=="Generate Special Input File") { 
 source(paste0(codepth,"inputGeneration.R"))
 dlgMessage("All done, thank you!")
 } else if (pipestep=="Annotation") {

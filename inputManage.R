@@ -8,11 +8,14 @@ if(!require(msImpute)){	BiocManager::install("msImpute",update=F,ask=F)}
 library(msImpute)
 if(!require(ggplot2)){install.packages("ggplot2")}
 library(ggplot2)
+if(!require(openxlsx)){install.packages("openxlsx")}
+library(openxlsx)
 ################################################################################
 
 #######################deposit location#########################################
 setwd(dlg_dir(default = getwd(),title="Where should results be stored?")$res)
 fdn=paste0("Phosphoproteomics_analysis_",Sys.Date())
+#if location exists, then add suffix of dash and the next number for the new result folder
 if (!dir.exists(fdn)) {
 dir.create(fdn) } else {
 n=1
@@ -29,14 +32,14 @@ fileType=dlgList(c("MaxQaunt","Other"),title="Choose input file source")$res
 if (fileType=="MaxQaunt") {
 fname=dlg_open(title = "Select MaxQuant result file \'Phospho(STY)Sites\' for input",multiple=F)$res
 } else {
-fname=dlg_open(title = "Select input file with correct format",multiple=F)$res
+fname=dlg_open(title = "Select input file with correct format (.csv or .xlsx)",multiple=F)$res
 }
 ################################################################################
 
 #######################run option###############################################
 #setup which step to run
 if (fileType=="MaxQaunt") {
-pipestep=dlgList(c("Generate Input File","Annotation","Overview Figures","Differential Analysis","All Steps"),
+pipestep=dlgList(c("Generate Special Input File","Annotation","Overview Figures","Differential Analysis","All Steps"),
 title="Select which analysis to run")$res
 } else {
 pipestep=dlgList(c("Annotation","Overview Figures","Differential Analysis","All steps"),
@@ -104,7 +107,16 @@ rawdatafile$Potential.contaminant[is.na(rawdatafile$Potential.contaminant)]=""
 rawdatafile=rawdatafile[which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant==""),-c(7,8)]
 rawinfofile=rawinfofile[which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant==""),]
 } else {
+#read input file from 'Other' based on whether it's a csv or xlsx file 
+fnameparts=strsplit(fname,"\\.")[[1]]
+if (fnameparts[length(fnameparts)]=="csv") {
 rawdatafile=read.csv(fname,stringsAsFactors=F)
+} else if (fnameparts[length(fnameparts)]=="xlsx") {
+rawdatafile=read.xlsx(fname,sheet=1,check.names=T)
+} else {
+dlg_message("Only .csv and .xslx formats are supported!")
+}
+
 colnames(rawdatafile)[1:6]=c("Protein","Protein.names","Gene.names","Amino.acid","Position","Sequence.window")
 msg_box("Please make sure the file follows the described
 format, and have reverse sequence and potential 
@@ -127,9 +139,9 @@ type="yesno")$res
 if (rrgo=="yes") {
 rcoff=dlgList(c("Remove rows with missing value >50%","Remove rows with missing value >30%",
 "Remove rows with missing value >10%"),title="Choose missing value cutoff")$res
-if (rcoff=="Remove rows with missing value >50%") {rcoffv=0.5} 
-else if (rcoff=="Remove rows with missing value >30%") {rcoffv=0.3}
-else {rcoffv=0.1}
+if (rcoff=="Remove rows with missing value >50%") {rcoffv=0.5
+} else if (rcoff=="Remove rows with missing value >30%") {rcoffv=0.3
+} else {rcoffv=0.1}
 rpass=apply(rintfile,1,FUN=function(x) (sum(x==0)/length(x))<rcoffv)
 rintfile=rintfile[which(rpass),]
 rawdatafile=rawdatafile[which(rpass),]
@@ -172,10 +184,10 @@ title="Imputation and normalization")$res}
 ################################################################################
 
 #######################group setup##############################################
+#perform group setup from groupSetup.R
 if (pipestep!="Generate Input File"&pipestep!="Annotation") {
 source(paste0(codepth,"groupSetup.R"))
-group=grouping()
-grpcompare=grpcpare(group)}
+}
 ################################################################################
 
 #######################normalization and imputation#############################

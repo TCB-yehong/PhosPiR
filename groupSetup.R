@@ -1,129 +1,191 @@
-#guide on/off switch for setting up group
-guide=dlgMessage("Enable group setup guide? (warning: quite wordy)",type="yesno")$res
-#recording sample name information
+#read sample names
 samplenames=substring(colnames(rintfile),
 unlist(lapply(colnames(rintfile),FUN=function(x) gregexpr("\\.",x)[[1]][1]))+1,
 nchar(colnames(rintfile)))
+
 dir.create("Group Information")
 write.table(samplenames,"Group Information/input_sample_names.csv",sep=",",col.names=F)
 
-#group function, sets up sample groups
-grouping=function() {
-cat("Grouping input guidelines:
-In your phosphoproteomics data file, samples are represented by intensity columns.
-Each intensity column matches one sample in MS run. Some samples are repeats, some
-could be time series sample grouped by experiment length. some could be grouped in 
-different ways based on different experiment parameters. Please define your grouping
-of samples here. simply enter how many ways your samples can be grouped, then for every
-way of grouping, enter a series of numbers separated by comma (no space) to represent 
-each sample in order. The total count of numbers should equal to sample number; and 
-samples in the same group should be given the same number. Ex: 10 samples, 2 conditions 
-with 5 repeats per condition could be grouped in 1 way, written as 1,1,1,1,1,2,2,2,2,2
-")
-if (guide=="yes") {
-msg_box(message=c("Grouping input guidelines:
+#############################group setup########################################
+#choose setup method 
+gsetmethod=dlgList(c("Read from file (.csv or .xlsx)","Go through group setup process"),
+title="Select group setup method")$res
 
-In your phosphoproteomics data file, samples are represented
-by intensity columns. Each intensity column matches one 
-sample in MS run. Some samples are repeats, some could be 
-time series sample grouped by experiment length. some could 
-be grouped in different ways based on different experiment 
-parameters. 
-
-Please define your grouping of samples here. simply enter 
-how many ways your samples can be grouped, then for every 
-way of grouping, enter a series of numbers separated by 
-comma (no space) to represent each sample in order. The 
-total count of numbers should equal to sample number; and
-samples in the same group should be given the same number. 
-
-Ex: 10 samples, 2 conditions with 5 repeats per condition 
-could be grouped in 1 way, written as 1,1,1,1,1,2,2,2,2,2
-
-IF you cannot remember your sample label and order from 
-the data, it is extracted for you in file:", 
-fdn,
-"/Group Information/input_sample_names.csv"))}
+if ("Go through group setup process" %in% gsetmethod) {
 grp=numeric()
+#prompt number of group repeatedly if no number is entered
 while(length(grp)==0){
 grp=as.integer(dlg_input("How many ways can the samples be grouped (type a number): ","1")$res)}
+#if value is not integer, default grouping method count =1
 if(is.na(grp)) {grp=1}
+
 grping=list()
+#setup each grouping method's orders
 for (i in 1:grp) {
+#choose or type a grouping method description
 grpby=dlgList(c("Genotype","Phenotype","Strain","Treatment 1","Treatment 2","Other"),title=paste("Group",i,"is grouped by:",collapse=" "))$res
 if (grpby=="Other") {
 grpby=as.character(dlgInput(paste("Group",i,"is grouped by:",collapse=" "))$res)}
-grpinp=dlg_input(paste0("Please enter grouping order of group ",i, ": "))$res
-while (length(unlist(strsplit(grpinp,",")))!=length(samplenames)) {
-grpinp=dlg_input(paste0("Please double check sample number. Enter grouping order of group ",i, ": "))$res}
-grping[[i]]=as.numeric(factor(unlist(strsplit(grpinp,","))))
+
+#setup group number
+newgroupyes="yes"
+#current group number
+n=1
+#setup place holder
+grpinp=rep(0,length(samplenames))
+samplenameinput=samplenames
+while (newgroupyes=="yes") {
+#select sample names that belong to the current group 
+sampleSelect=dlgList(samplenameinput,multiple=T,title=paste0("Select samples in group ",n))$res
+#replace place holder by current group number 
+grpinp[which(samplenameinput %in% sampleSelect)]=n
+#mark selected samples with group number 
+samplenameinput[which(samplenameinput %in% sampleSelect)]=paste(samplenameinput[which(samplenameinput %in% sampleSelect)]," --Group",n)
+#whether there is another group in this grouping method, continue repeat the same steps until no more new groups
+newgroupyes=dlgMessage("Is there another group in this grouping method?", type="yesno")$res
+n=n+1
+}
+#save order in a list
+grping[[i]]=as.numeric(grpinp)
 names(grping)[[i]]=grpby
 }
+
+#change to dataframe format and save this information for re-run's order input
 grpingdf=as.data.frame(grping)
 rownames(grpingdf)=samplenames
-#colnames(grpingdf)=paste0("grouping",1:length(grping))
+#get original dataset name
+ofname=strsplit(fname,"/|\\.")[[1]]
+ofnames=ofname[length(ofname)-1]
+write.csv(grpingdf,paste0("Group Information/",ofnames,"_sample_grouping_order_input.csv"))
+}
+
+if ("Read from file (.csv or .xlsx)" %in% gsetmethod) {
+#prompt to select input file 
+grpfile=dlg_open(title = "Select group setup input file with correct format (.csv or .xlsx)",multiple=F)$res
+#read input based on whether it is a csv or xlsx file 
+grpfileparts=strsplit(grpfile,"\\.")[[1]]
+if (grpfileparts[length(grpfileparts)]=="csv") {
+grpfiledf=read.csv(grpfile,stringsAsFactors=F,row.names=1)
+} else if (grpfileparts[length(grpfileparts)]=="xlsx") {
+grpfiledf=read.xlsx(grpfile,sheet=1,check.names=T,rowNames=T)
+} else {
+dlg_message("Only .csv and .xslx formats are supported!")
+}
+
+#in case sample order is different from dataset, match sample order 
+grpfiledfo=grpfiledf[match(samplenames,rownames(grpfiledf)),]
+#record group order in a list variable with grouping method as list item name
+grping=list()
+for (i in 1:ncol(grpfiledfo)) {
+grping[[i]]=as.numeric(grpfiledfo[,i])
+names(grping)[[i]]=colnames(grpfiledfo)[i]
+}
+
+#save this info as grouping order information 
+grpingdf=as.data.frame(grping)
+rownames(grpingdf)=samplenames
 write.csv(grpingdf,"Group Information/sample_grouping_order.csv")
-return(grping)}
+}
+################################################################################
 
-#comparison function, sets up comparisons within groups
+
+#############################comparison setup###################################
+#choose setup method
+gcprmethod=dlgList(c("Read from file (.csv or .xlsx)","Go through comparison setup process"),
+title="Select group comparison setup method")$res
+
+if ("Go through comparison setup process" %in% gcprmethod) {
 grpcpare=function(group) {
-if (guide=="yes") {
-msg_box("Group comparison info input guidelines:
-
-Comparison of different conditions will yield proteins or sites 
-of interest (i.e. significantly differentially expressed proteins 
-or phosphosites). 
-
-Please indicate the intended comparisons (at the moment only
-takes 1 grouping into consideration at a time) by stating 
-which grouping would you want to do comparisons, and 
-which conditions should be compared to each other.")
-
-msg_box("Input format is similar to previous input format. Ex. 12
-samples grouped in two ways: 1,1,1,1,2,2,2,2,3,3,3,3 and
-1,1,1,1,1,1,2,2,2,2,2,2. In the frst 2 comparisons, 
-condition 2 and condition 3 are compared to condition 1 
-separately from grouping order 1, in the 3rd comparison, 
-condition 1 is compared to condition 2 from grouping
-order 2.
-
-To set up the comparison, choose grouping 1, then write
-'1,2' for the first comparison, then choose 'OK' to make
-another comparison. Choose grouping 1 then write '1,3'
-for the second comparison, then choose 'OK'. Choose
-grouping 2 for the third comparison, then write
-'1,2'. Choose 'Cancel' to finish comparison set up.
-
-Note: If data is paired, i.e. condition 1 and condition 2
-in the comparison used the same mice, please make sure the
-pairs are in the same order.
-
-")}
-
+#print in R each group's order 
 for (i in names(group)) {
 cat(i,"group groups the samples as follwing:",paste(group[[i]],collapse=","),"\n")}
+
 grpcpr=list()
 grpcprn=c()
 idx=1
+cnprnumset=c()
+#select grouping method the compared groups are from, then enter group numbers
 while (idx>0) {
 grpnum=dlgList(names(group),title="Which group to compare?")$res
 cnprnum=dlg_input(paste("Which 2 (or more)", grpnum, "types would you like to compare: ",collapse=" "))$res
+#prompt again if input is not in the correct format (input can't match to group info or only 1 group in input)
 while (any(!(as.integer(unlist(strsplit(cnprnum,","))) %in% unique(group[[grpnum]])),length(unique(unlist(strsplit(cnprnum,","))))==1)) {
 cnprnum=dlg_input(paste("Please check input. Which 2 (or more)", grpnum, "types would you like to compare: ",collapse=" "))$res}
+#create dataframe to record column number of the selected groups from just intensity columns, and record group numbers
 grptemp=data.frame(intcol=which(group[[grpnum]] %in% as.integer(unlist(strsplit(cnprnum,",")))),group=group[[grpnum]][which(group[[grpnum]] %in% as.integer(unlist(strsplit(cnprnum,","))))])
 colnames(grptemp)[2]=grpnum
 rownames(grptemp)=samplenames[which(group[[grpnum]] %in% as.integer(unlist(strsplit(cnprnum,","))))]
+#record this info to list, and append list for new comparisons 
 grpcpr[[idx]]=grptemp[order(grptemp[,2]),]
+#record grouping method and input group numbers 
 grpcprn=c(grpcprn,grpnum)
-lp=ok_cancel_box("Would you like to make another comparison?")
-if (lp) {idx=idx+1
+cnprnumset=c(cnprnumset,cnprnum)
+#repeat if user wants to make more comparisons 
+lp=dlgMessage("Would you like to make another comparison?", type="yesno")$res
+if (lp=="yes") {idx=idx+1
 } else {cat(length(grpcpr),"comparisons have been set up.")
 idx=0}}
+
 names(grpcpr)=grpcprn
+#making a information table for compared samples, and record in csv file 
 cprinfo=data.frame(Comparisons=paste0("Comparison",1:length(grpcpr)))
 cprinfo$Groups=grpcprn
 cprinfo$Types=unlist(lapply(grpcpr, FUN=function(x) paste(sort(unique(x[,2]),decreasing=T),collapse=" vs ")))
 cprinfo$Samples_Involved=unlist(lapply(grpcpr, FUN=function(x) paste(rownames(x),collapse=";")))
 write.csv(cprinfo,"Group Information/Comparison_Information.csv",row.names=F)
+
+#make dataframe and save comparison information for re-run purpose
+cprinfoset=data.frame(Grouping_method=grpcprn,Comparison=cnprnumset)
+#get original dataset name
+ofname=strsplit(fname,"/|\\.")[[1]]
+ofnames=ofname[length(ofname)-1]
+write.csv(cprinfoset,paste0("Group Information/",ofnames,"_comparison_setup_input.csv"),row.names=F)
+
 return(grpcpr)
 }
+grpcompare=grpcpare(grping)
+}
+
+if ("Read from file (.csv or .xlsx)" %in% gcprmethod) {
+#prompt to select input file 
+cprfile=dlg_open(title = "Select comparison input file with correct format (.csv or .xlsx)",multiple=F)$res
+#read input based on whether it is a csv or xlsx file 
+cprfileparts=strsplit(cprfile,"\\.")[[1]]
+if (cprfileparts[length(cprfileparts)]=="csv") {
+cprfiledf=read.csv(cprfile,stringsAsFactors=F)
+} else if (cprfileparts[length(cprfileparts)]=="xlsx") {
+cprfiledf=read.xlsx(cprfile,sheet=1,check.names=T)
+} else {
+dlg_message("Only .csv and .xslx formats are supported!")
+}
+
+grpcpr=list()
+grpcprn=c()
+cnprnumset=c()
+for (i in 1:nrow(cprfiledf)) {
+#get grouping method and comparison groups from each row of input 
+grpnum=cprfiledf[i,1]
+cnprnum=cprfiledf[i,2]
+#create dataframe to record column number of the selected groups from just intensity columns, and record group numbers
+grptemp=data.frame(intcol=which(grping[[grpnum]] %in% as.integer(unlist(strsplit(cnprnum,",")))),grping=grping[[grpnum]][which(grping[[grpnum]] %in% as.integer(unlist(strsplit(cnprnum,","))))])
+colnames(grptemp)[2]=grpnum
+rownames(grptemp)=samplenames[which(grping[[grpnum]] %in% as.integer(unlist(strsplit(cnprnum,","))))]
+#record this info to list, and append list for new comparisons 
+grpcpr[[i]]=grptemp[order(grptemp[,2]),]
+#record grouping method and input group numbers 
+grpcprn=c(grpcprn,grpnum)
+cnprnumset=c(cnprnumset,cnprnum)
+}
+
+names(grpcpr)=grpcprn
+#making a information table for compared samples, and record in csv file 
+cprinfo=data.frame(Comparisons=paste0("Comparison",1:length(grpcpr)))
+cprinfo$Groups=grpcprn
+cprinfo$Types=unlist(lapply(grpcpr, FUN=function(x) paste(sort(unique(x[,2]),decreasing=T),collapse=" vs ")))
+cprinfo$Samples_Involved=unlist(lapply(grpcpr, FUN=function(x) paste(rownames(x),collapse=";")))
+write.csv(cprinfo,"Group Information/Comparison_Information.csv",row.names=F)
+
+grpcompare=grpcpr
+}
+################################################################################
+

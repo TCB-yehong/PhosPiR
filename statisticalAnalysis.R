@@ -474,9 +474,9 @@ volcplot=function(volcalpha,dataf,volcfccf,volcpvalcf,volclabon) {
 expandy = function(plot, ymin=0) {
 
   max.y = max(layer_data(plot)$y, na.rm=TRUE)
-  min.log = floor(log10(max.y))
+  min.log = floor(log(max.y,base=50))
 
-  expand_limits(y=c(ymin, ceiling(max.y/10^min.log)*10^min.log*1.1))
+  expand_limits(y=c(ymin, ceiling(max.y/50^min.log)*50^min.log*1.1))
 }
 
 volcano <- ggplot(dataf,aes(logFC, nlogpval, color=lab, solid=F)) + 
@@ -487,8 +487,8 @@ volcano <- ggplot(dataf,aes(logFC, nlogpval, color=lab, solid=F)) +
         axis.text.y=element_text(size=14), axis.title.y=element_text(size=16)) +
   xlab("Log10 Fold Change") + ylab("-Log10 P-value") +
   labs(colour="Comparison Group") +
-  geom_vline(xintercept = log2(volcfccf),linetype="dashed") + geom_vline(xintercept = -log2(volcfccf),linetype="dashed") +
-  geom_hline(yintercept = -log2(volcpvalcf),linetype="dashed") 
+  geom_vline(xintercept = log10(volcfccf),linetype="dashed") + geom_vline(xintercept = -log10(volcfccf),linetype="dashed") +
+  geom_hline(yintercept = -log10(volcpvalcf),linetype="dashed") 
  volcano <- volcano + expandy(volcano)
 
 if (volclabon) {
