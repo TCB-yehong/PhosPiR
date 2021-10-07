@@ -23,9 +23,9 @@ grping=list()
 #setup each grouping method's orders
 for (i in 1:grp) {
 #choose or type a grouping method description
-grpby=dlgList(c("Genotype","Phenotype","Strain","Treatment 1","Treatment 2","Other"),title=paste("Group",i,"is grouped by:",collapse=" "))$res
+grpby=dlgList(c("Genotype","Phenotype","Strain","Treatment 1","Treatment 2","Other"),title=paste("Grouping method",i,"is grouped by:",collapse=" "))$res
 if (grpby=="Other") {
-grpby=as.character(dlgInput(paste("Group",i,"is grouped by:",collapse=" "))$res)}
+grpby=as.character(dlgInput(paste("Grouping method",i,"is grouped by:",collapse=" "))$res)}
 
 #setup group number
 newgroupyes="yes"
@@ -49,6 +49,7 @@ n=n+1
 grping[[i]]=as.numeric(grpinp)
 names(grping)[[i]]=grpby
 }
+group=grping
 
 #change to dataframe format and save this information for re-run's order input
 grpingdf=as.data.frame(grping)
@@ -72,14 +73,28 @@ grpfiledf=read.xlsx(grpfile,sheet=1,check.names=T,rowNames=T)
 dlg_message("Only .csv and .xslx formats are supported!")
 }
 
+#check if file included all necessary info, if not, reselect file 
+while (!all(samplenames %in% rownames(grpfiledf))|sum(is.na(grpfiledf))!=0) {
+dlg_message("Some samples are missing group information! Please select a file with all samples' information")
+grpfile=dlg_open(title = "Select group setup input file with correct format (.csv or .xlsx)",multiple=F)$res
+grpfileparts=strsplit(grpfile,"\\.")[[1]]
+if (grpfileparts[length(grpfileparts)]=="csv") {
+grpfiledf=read.csv(grpfile,stringsAsFactors=F,row.names=1)
+} else if (grpfileparts[length(grpfileparts)]=="xlsx") {
+grpfiledf=read.xlsx(grpfile,sheet=1,check.names=T,rowNames=T)
+} else {
+dlg_message("Only .csv and .xslx formats are supported!")
+}
+}
 #in case sample order is different from dataset, match sample order 
-grpfiledfo=grpfiledf[match(samplenames,rownames(grpfiledf)),]
+grpfiledfo=grpfiledf[match(samplenames,rownames(grpfiledf)),,drop=F]
 #record group order in a list variable with grouping method as list item name
 grping=list()
 for (i in 1:ncol(grpfiledfo)) {
 grping[[i]]=as.numeric(grpfiledfo[,i])
 names(grping)[[i]]=colnames(grpfiledfo)[i]
 }
+group=grping
 
 #save this info as grouping order information 
 grpingdf=as.data.frame(grping)
@@ -165,6 +180,9 @@ cnprnumset=c()
 for (i in 1:nrow(cprfiledf)) {
 #get grouping method and comparison groups from each row of input 
 grpnum=cprfiledf[i,1]
+if (gsetmethod!="Go through group setup process") {
+grpnum=gsub(" ",".",grpnum)
+}
 cnprnum=cprfiledf[i,2]
 #create dataframe to record column number of the selected groups from just intensity columns, and record group numbers
 grptemp=data.frame(intcol=which(grping[[grpnum]] %in% as.integer(unlist(strsplit(cnprnum,",")))),grping=grping[[grpnum]][which(grping[[grpnum]] %in% as.integer(unlist(strsplit(cnprnum,","))))])

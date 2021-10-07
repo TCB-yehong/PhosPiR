@@ -61,7 +61,6 @@ write.csv(rawdatafile,paste0("Raw File/",ofnames,"_expanded_phospho_count.csv"),
 
 if ("Suspected falsely-classified-contamination included" %in% inputselec) {
 raw=read.delim(fname)
-#2 files are created from maxquant raw file, one for intensity and one for ID info
 
 #intensity file:
 #extract data info column number
@@ -78,6 +77,14 @@ rawdatafile$Reverse[is.na(rawdatafile$Reverse)]=""
 rawdatafile$Potential.contaminant[is.na(rawdatafile$Potential.contaminant)]=""
 #extract potential contaminant entries 
 pcontam=rawdatafile[which(rawdatafile$Potential.contaminant=="+"),]
+#if no contaminants, print warning 
+if (nrow(pcontam)==0) {
+dlgMessage("There are no marked contaminants in the data!")
+#save generated input file 
+write.csv(rawdatafile[,-c(7,8)],paste0("Raw File/",ofnames,"_no_potential_contaminant.csv"),row.names=F)
+} else {
+#mark possible contaminant in protein name 
+pcontam$Protein.names=paste0(pcontam$Protein.names,"; Possible contaminant")
 #keep only non-reverse entries 
 pcontam=pcontam[which(pcontam$Reverse==""),]
 #remove "CON__" from protein name
@@ -86,12 +93,16 @@ pcomprot=gsub("CON__","",pcontam$Protein)
 rawprot=rawdatafile[which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant==""),which(colnames(rawdatafile)=="Protein")]
 #keep any potential contaminant entries with overlapping protein ID with non-contaminant
 pcontamf=pcontam[which(pcomprot %in% rawprot),-c(7,8)]
+
 #remove reverse or contaminant entries from main dataset 
 rawdatafile=rawdatafile[which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant==""),-c(7,8)]
 #add kept potential contaminant entries
 rawdatafile=as.data.frame(rbind(rawdatafile,pcontamf))
+#get original dataset name
+ofname=strsplit(fname,"/|\\.")[[1]]
+ofnames=ofname[length(ofname)-1]
 #save generated input file 
 write.csv(rawdatafile,paste0("Raw File/",ofnames,"_potential_false_contaminant_added.csv"),row.names=F)
 #report number of entries added to the dataset 
-dlgMessage(paste0(nrow(pcontamf)," potential false contaminant-labeled entries are added to dataset."))
+dlgMessage(paste0(nrow(pcontamf)," potential false contaminant-labeled entries are added to dataset."))}
 }

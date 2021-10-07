@@ -10,32 +10,42 @@ library(gridExtra)
 ################################################################################
 
 #######################test structure setup#####################################
+#structure function for statistical testing and making volcano plots 
 statFunc=function(transf,group,grpcompare) {
 cpnum=length(grpcompare)
 cat(cpnum,"comparisons will be analyzed.")
 
+#make a matrix with tests as column and comparisons as row 
 testsl=matrix(0,ncol=7,nrow=cpnum)
 colnames(testsl)=c("FC","SEM","T-Test","Wilcoxon-Test","ROTS","RankProd","ANOVA")
 rownames(testsl)=paste0("comparison",c(1:cpnum))
 pairv=c()
+#setup each comparison with user options
 for (i in 1:cpnum) {
-cat("Comparison",i,"compares groups",paste(unique(grpcompare[[i]][,2]),collapse=", "),"from grouping",paste0(names(grpcompare)[i],"."),"
-")
+dlg_message(paste0("Comparison ",i," compares group ",paste(unique(grpcompare[[i]][,2]),collapse=", ")," from ",paste0(names(grpcompare)[i]," grouping."),"
+"),type="ok")
 grp2l=c()
-pairl=dlg_message("Is data paired in this comparison?", "yesno")$res
+#ask for pair information 
+pairl=dlg_message(paste0("Is data paired in comparison ",i,"?"), "yesno")$res
 pairv=c(pairv,pairl)
+#if comparison includes only 2 groups, FC and SEM auto selected, then user select any or all of the stats tests
 if (length(unique(grpcompare[[i]][,2]))==2) {
 grp2l=c(grp2l,1)
 cat("Fold change and SEM will be calculated.")
 wtests=dlg_list(c("1.T-Test","2.Mann-Whitney-Wilcoxon Test","3.Reproducibility-Optimized Test Statistic (ROTS)",
-"4.Rank Product (always assume unpaired)"),multiple=T,title="Which statistical tests should be performed?")$res
+"4.Rank Product (always assume unpaired)"),multiple=T,title=paste0("Which statistical tests for comparison ",i,"?"))$res
+#record the number label (+2) of the selected tests 
 testyes=unlist(lapply(wtests,FUN=function(x) as.numeric(unlist(strsplit(x,"\\."))[1])))+2
+#mark 1 in the earlier matrix at the matching comparison and tests' row and column in the matrix 
 testsl[i,c(1,2,testyes)]=rep(1,length(testyes)+2)} else {
+
+#if comparison includes more than 2 groups, ANOVA test auto selected 
 grp2l=c(grp2l,0)
 cat("ANOVA will be performed.")
 dlgMessage("Please make sure 'normalization and imputation' option was selected for valid ANOVA result")
 testsl[i,7]=1
 }}
+#pairing info change to numerical binary
 pairv[pairv=="yes"]=1
 pairv[pairv=="no"]=2
 pairv=as.numeric(pairv)
@@ -43,15 +53,18 @@ grp2l=as.logical(grp2l)
 
 
 cat("Thank you! Analysis in progress, please wait...")
+#keep only numeric columns 
 data=transf[,-(1:6)]
 transfana=transf
 transfanan=c()
 for (i in 1:nrow(testsl)) {
+#for each comparison, check if pairing info is reasonably correct, if not change info to none pairing 
 if (pairv[i]==1) {
 pairlenl=sum(grpcompare[[i]][,2]==unique(grpcompare[[i]][,2])[2])==sum(grpcompare[[i]][,2]==unique(grpcompare[[i]][,2])[1])
 if (!pairlenl) {cat("In comparison",i,"not all samples are paired, proceeding to unpaired calculations...")
 pairv[i]=2}
 }
+#check for each test, if they are selected, if yes (1), perform test with corresponding functions 
 if (testsl[i,1]) {
 resc=fc(pairv[i],grpcompare[[i]],data,i)
 transfana=cbind(transfana,resc)
@@ -88,12 +101,15 @@ transfana=cbind(transfana,resc)
 descb=colnames(resc)
 transfanan=c(transfanan,descb)}
 }
+
+#save result of analysis 
 transfana=as.data.frame(transfana)
 dir.create("Statistical Analysis")
 write.csv(transfana,"Statistical Analysis/data_and_analysis_results.csv",row.names=F)
 if ("rawinfofile" %in% ls()) {
 write.csv(rawinfofile,"Statistical Analysis/Data_background_info.csv",row.names=F)}
 
+#prompt sig entries cutoff selection for stats result 
 cat("Analysis complete. Please choose cutoffs for significantly changing entries
 (your 'Significant Lists').")
 
@@ -101,28 +117,35 @@ testsep=unlist(lapply(transfanan,FUN=function(x) unlist(strsplit(x,"_"))[1]))
 dir.create("Statistical Analysis/Significant Lists",showWarnings=F)
 coinfo=c()
 for (i in 1:length(grpcompare)) {
+#get a vector of stats result for each comparison 
 testrow=grep(as.character(i),testsep)
 
+#prompt the list of stats for user to choose for setting up cutoff 
 cotimes=0
 coselec=1
 while(coselec==1) {
 cochoice=c()
 while(length(cochoice)==0) {
-cochoice=dlgList(transfanan[testrow],multiple=T,title="Select statistics used for cutoff")$res}
+cochoice=dlgList(transfanan[testrow],multiple=T,title=paste0("Select Comparison ",i," statistics cutoff"))$res}
 cocol=match(cochoice,colnames(transfana))
+#prompt for cutoff numerical value after stats options are chosen 
 conum=c()
 srcandi=c()
 for (j in 1:length(cochoice)) {
 conumeach=c()
 while(length(conumeach)==0) {
-conumeach=as.numeric(dlgInput(paste0("Please input a numerical cutoff value for ",cochoice[j]))$res)}
+conumeach=as.numeric(dlgInput(paste0("Please input an unlogged numerical cutoff value for ",cochoice[j]))$res)}
 conum=c(conum,conumeach)
+#set fold change cutoff to be smaller than selected value, and set pval cutoff to be larger than selected value 
 if (grepl("FoldChange",cochoice[j])) {
 srcandi=c(srcandi,which(abs(transfana[,cocol[j]])>conumeach))} else {
 srcandi=c(srcandi,which(transfana[,cocol[j]]<conumeach))}
 }
+#display number of sig entries based on the earlier cutoff 
 keepsigl=dlgMessage(paste0("Based on the selected cutoff, there are ",sum(table(srcandi)==length(cochoice)),
 " significant entries for comparison ",i,". Keep significant list for further analysis?"),type="yesno")$res
+#if user decided to keep this list, generate list info and append to a new row. 
+#And extract data for this list with cutoff stats' columns and save to csv file 
 if(keepsigl=="yes") {
 cotimes=cotimes+1
 if(length(cochoice)==1){
@@ -133,6 +156,7 @@ sigrec=transfana[as.numeric(names(table(srcandi))[which(table(srcandi)==length(c
 write.csv(sigrec,paste0("Statistical Analysis/Significant Lists/Comparison",i,"_cutoff",cotimes,"_sigEntries.csv"),row.names=F)
 }
 
+#repeat if user would like to select another cutoff 
 comore=dlgMessage(paste0("Would you like to select another set of cutoff for comparison ",i,"?"),type="yesno")$res
 if (comore=="no"){
 if (i==length(grpcompare)) {coselec=0
@@ -141,6 +165,8 @@ coselec=0
 msgBox(paste0("Moving on to comparison ",i+1,"."))}}
 }
 }
+
+#save all sig lists' info to csv file 
 coinfo=as.data.frame(coinfo,stringsAsFactors=F)
 colnames(coinfo)=c("Siglist","Samples_involved","Data_columns_involved","Group_category","Group_labels_involved","Cutoff_stats","Cutoff_values","Cutoff_value_columns")
 write.csv(coinfo,"Statistical Analysis/Siglists_cutoff_info.csv",row.names=F)
@@ -150,12 +176,15 @@ write.csv(coinfo,"Statistical Analysis/Siglists_cutoff_info.csv",row.names=F)
 #choose 1 stats test result to plot (from stats that all comparisons have)
 #plot volcano plot + save in tiff and eps
 #ask if another one should be made
+
+#ask if user would like to make volcano plots 
 volcselec=dlgMessage("Make volcano plots?",type="yesno")$res
 if (volcselec=="yes") {
 volcyes=T} else {volcyes=F}
 volccount=1
 volcrecord=c()
 
+#if user select yes, get comparison number and grouping method and groups involved in the comparison
 while (volcyes) {
 volcop=c()
 grpcpidx=c()
@@ -168,11 +197,12 @@ volcop=c(volcop,volc1op)
 grpcpidx=c(grpcpidx,i)}
 #}
 
+#prompt comparison selection GUI, if user chose more than 4 comparisons, reprompt 
 if (length(volcop)>0) {
 msgBox("Please select a maxinum of 4 comparisons to include in the volcano plot")
 volcgrpselec=dlgList(volcop,title="Select comparisons for volcano plot",multiple=T)$res
 while (length(volcgrpselec)>4) {
-volcgrpselec=dlgList(volcop,title="Please choose maxsimum 4 comparisons",multiple=T)$res}
+volcgrpselec=dlgList(volcop,title="Please choose maximum 4 comparisons",multiple=T)$res}
 cpridx=grpcpidx[match(volcgrpselec,volcop)]
 #check if all includes at least 1 stats test, if not, omit comparison that doesn't, give warning,
 #if all doesn't, give warning and move on
@@ -185,9 +215,13 @@ if (length(cprgdidx)==0) {
 msgBox("Note: no comparisons have P-value or FDR calculated, this volcano plot will not be made.")
 } else if (length(cpridx)>length(cprgdidx)) {
 msgBox("Note: some comparisons are missing P-value and FDR calcuation, they are omitted from plot.")} 
+
+#if more than 1 stats test was performed, extract all columns that fits the stat test descriptions
 if (length(cprgdidx)>0) {
 tempgdgrpcol=transfanan[grep(paste(cprgdidx,collapse="|"),
 unlist(lapply(transfanan,FUN=function(x) strsplit(x,"_")[[1]][1])))]
+
+#processing tukey post-hoc specifically as so many sets of fold changes are included 
 if (sum(grepl("Tukey",tempgdgrpcol))>0) {
 multicol=grep(unlist(strsplit(tempgdgrpcol[grep("Tukey",tempgdgrpcol)[1]],"_"))[1],tempgdgrpcol)
 multicolidx=match(c("Gene.names",tempgdgrpcol[grep("Tukey",tempgdgrpcol)]),colnames(transfana))
@@ -210,6 +244,8 @@ multicpridx=c(multicpridx,i)
 }}
 cprgdidx=cprgdidx[multicpridx]
 } 
+
+#if there is at least 1 stats column for a comparison, extract info and generate parameters needed for volcano plot 
 if (length(tempgdgrpcol)>0) {
 tempgdsubname=substring(tempgdgrpcol,
 unlist(lapply(tempgdgrpcol,FUN=function(x) gregexpr("\\_",x)[[1]][1]))+1,
@@ -247,10 +283,10 @@ rm(multicol)
 #calculate modified fc and modified pval
 volcnlogpval=-log10(volcpval)
 volclogFC=rep(0,length(volcfc))
-volclogFC[volcfc>0]=log10(volcfc[volcfc>0])
-volclogFC[volcfc<0]=-log10(abs(volcfc[volcfc<0]))
-#get sig cutoff & number of sigs
-#if both side < 50, include gene label, else not
+volclogFC[volcfc>0]=log2(volcfc[volcfc>0])
+volclogFC[volcfc<0]=-log2(abs(volcfc[volcfc<0]))
+
+#setup fold change and p-value cutoff variable based on user input 
 msgBox("Please choose fold change and p-value cutoff")
 volcstatcf=dlgList(c("2 and 0.05, respectively", "1.5 and 0.05, respectively", 
 "2 and 0.01, respectively", "1.5 and 0.01, respectively"),
@@ -270,8 +306,12 @@ volcfccf=2
 volcpvalcf=0.01
 volcfccf=1.5
 }
+
+#check if both side sig count < 30 (include gene label if yes, else no labels)
 volclabon=sum(volcfc>volcfccf&(volcpval<volcpvalcf))<30&(sum(volcfc<(-volcfccf)&(volcpval<volcpvalcf))<30)
+#organize data needed for volcano plots
 dataf=data.frame(name=volcname,pval=volcpval,nlogpval=volcnlogpval,fc=volcfc,logFC=volclogFC,lab=volcgroup)
+#check if the selected number of comparisons is less than 4, if not, ask user to re-select 
 if (length(unique(dataf$lab))>4) {
 volcgrpselec2=dlgList(unique(dataf$lab),title="Select 1 to 4 comparisons",multiple=T)$res
 while (length(volcgrpselec2)>4) {
@@ -279,17 +319,20 @@ volcgrpselec2=dlgList(unique(dataf$lab),title="Please choose maxsimum 4 comparis
 dataf=dataf[dataf$lab %in% volcgrpselec2,]
 }
 
+#plot vocano plot with volcano plot function and save as tiff 
 tiff(paste0("Statistical Analysis/Volcano_plot-",volccount,".tiff"), units="in", width=14, height=8, res=150)
 volcalpha=0.6
 volcplot(volcalpha,dataf, volcfccf,volcpvalcf,volclabon)
 dev.off()
 
+#plot vocano plot with volcano plot function and save as EPS 
 setEPS()
 postscript(paste0("Statistical Analysis/Volcano_plot-",volccount,".eps"), width=14, height=8)
 volcalpha=1
 volcplot(volcalpha,dataf, volcfccf,volcpvalcf,volclabon)
 dev.off()
 
+#record user choices for each volcano plot 
 tempvolcrec=c(paste0(unique(dataf$lab),collapse=","),volcstatselec,volcstatcf)
 names(tempvolcrec)=c("Included comparisons","Pvalue statistic","Cutoffs")
 volcrecord=rbind(volcrecord,tempvolcrec)
@@ -301,6 +344,8 @@ volcyes=T} else {volcyes=F}
 #} else {msgBox("Sorry no available 2-group comparisons, volcano plot cannot be made.")
 #volcyes=F}
 }}
+
+#save user choices for each volcano plot to csv file 
 rownames(volcrecord)=1:nrow(volcrecord)
 write.csv(as.data.frame(volcrecord),"Statistical Analysis/Volcano_plot_info.csv")
 return(transfana)
@@ -308,6 +353,7 @@ return(transfana)
 ################################################################################
 
 #######################statistical tests functions##############################
+#function for calculating fold change 
 fc=function(pair,compareinfo,data,i) {
 if (pair==2) {
 noneg=apply(data[,compareinfo[,1][which(compareinfo[,2]==unique(compareinfo[,2])[2])]],1,mean)/apply(data[,compareinfo[,1][which(compareinfo[,2]==unique(compareinfo[,2])[1])]],1,mean)
@@ -322,6 +368,7 @@ colnames(wneg)=paste0("Comparison",i,"_FoldChange")
 return(wneg)}
 }
 
+#function for calculating standard error of mean for fold change 
 sem=function(pair,compareinfo,data,i) {
 if (pair==2) {
 grp1m=apply(data[,compareinfo[,1][which(compareinfo[,2]==unique(compareinfo[,2])[1])]],1,mean)
@@ -339,6 +386,7 @@ return(semp)
 }
 }
 
+#function for T-test 
 tt=function(pair,compareinfo,data,i) {
 grp1=compareinfo[2]==names(table(compareinfo[2]))[1]
 grp2=compareinfo[2]==names(table(compareinfo[2]))[2]
@@ -357,6 +405,7 @@ return(ttdf)
 }
 }
 
+#function for wilcox test 
 wc=function(pair,compareinfo,data,i) {
 grp1=compareinfo[2]==names(table(compareinfo[2]))[1]
 grp2=compareinfo[2]==names(table(compareinfo[2]))[2]
@@ -375,6 +424,7 @@ return(wcdf)
 }
 }
 
+#function for ROTS test 
 rotz=function(pair,compareinfo,data,i) {
 if (!require(ROTS)) {BiocManager::install("ROTS",update=F,ask=F)}
 library(ROTS)
@@ -392,6 +442,7 @@ return(rotsdf)
 }
 }
 
+#function for rank product test
 rp=function(compareinfo,data,i) {
 if (!require(RankProd)) {BiocManager::install("RankProd",update=F,ask=F)}
 library(RankProd)
@@ -402,6 +453,7 @@ colnames(rpdf)=c(paste0("Comparison",i,"_RankProd_Pvalue"),paste0("Comparison",i
 return(rpdf)
 }
 
+#function that performs ANOVA and Tukey post hoc test for non-paired comparison, and LME model for paired comparison 
 anva=function(pair,compareinfo,data,i) {
 if (pair==2) {
 anvares=apply(data[,compareinfo[,1]],1,FUN=function(x) aov(x~as.factor(compareinfo[,2])))
@@ -470,7 +522,10 @@ return(anvadf)
 }
 }
 
+#function to plot volcano plot with x and y density plots 
 volcplot=function(volcalpha,dataf,volcfccf,volcpvalcf,volclabon) {
+
+#expand top of the figure
 expandy = function(plot, ymin=0) {
 
   max.y = max(layer_data(plot)$y, na.rm=TRUE)
@@ -479,18 +534,20 @@ expandy = function(plot, ymin=0) {
   expand_limits(y=c(ymin, ceiling(max.y/50^min.log)*50^min.log*1.1))
 }
 
+#actual volcano plot 
 volcano <- ggplot(dataf,aes(logFC, nlogpval, color=lab, solid=F)) + 
   geom_point(alpha=volcalpha) + 
 #  theme(legend.position=c(0.85,0.3), legend.justification=c(0,1)) +
   theme(legend.position = "none") +
   theme(axis.text.x=element_text(size=14), axis.title.x=element_text(size=16),
         axis.text.y=element_text(size=14), axis.title.y=element_text(size=16)) +
-  xlab("Log10 Fold Change") + ylab("-Log10 P-value") +
+  xlab("Log2 Fold Change") + ylab("-Log10 P-value") +
   labs(colour="Comparison Group") +
-  geom_vline(xintercept = log10(volcfccf),linetype="dashed") + geom_vline(xintercept = -log10(volcfccf),linetype="dashed") +
+  geom_vline(xintercept = log2(volcfccf),linetype="dashed") + geom_vline(xintercept = -log2(volcfccf),linetype="dashed") +
   geom_hline(yintercept = -log10(volcpvalcf),linetype="dashed") 
  volcano <- volcano + expandy(volcano)
 
+#add labels if sig entries are less than 30 from either (increasing and decreasing) sides 
 if (volclabon) {
 volcano <- volcano +
 			geom_label_repel(data=subset(dataf, abs(fc) > volcfccf & pval < volcpvalcf),
@@ -506,7 +563,7 @@ xdensity <- ggplot(dataf, aes(logFC, fill=lab)) +
 #  theme(legend.position = "none") +
   theme(axis.text.x=element_text(size=14), axis.title.x=element_text(size=16),
         axis.text.y=element_text(size=14), axis.title.y=element_text(size=16)) +
-  xlab("Log10 Fold Change") + ylab("Density") 
+  xlab("Log2 Fold Change") + ylab("Density") 
 xdensity
 # Marginal density plot of y (right panel)
 ydensity <- ggplot(dataf, aes(nlogpval, fill=lab)) + 
@@ -517,6 +574,7 @@ ydensity <- ggplot(dataf, aes(nlogpval, fill=lab)) +
   xlab("-Log10 P-value") + ylab("Density") 
 ydensity
 
+#top right corner's empty plot 
 blankPlot <- ggplot()+geom_blank(aes(1,1))+
   theme(plot.background = element_blank(), 
    panel.grid.major = element_blank(),

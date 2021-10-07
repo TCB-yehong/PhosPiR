@@ -47,6 +47,7 @@ title="Select which analysis to run")$res}
 ################################################################################
 
 #######################maxquant input formatting################################
+if (pipestep!="Generate Special Input File") {
 if (fileType=="MaxQaunt") {
 raw=read.delim(fname)
 #2 files are created from maxquant raw file, one for intensity and one for ID info
@@ -158,6 +159,7 @@ rawdatafile=rawdatafile[,c(1:6,which(cnasum<=mean(cnasum)+2*sd(cnasum))+6)]
 if (exists("rawinfofile")) {
 rawinfofile=rawinfofile[,c(1:rawinfofilecoln,which(cnasum<=mean(cnasum)+2*sd(cnasum))+rawinfofilecoln)]}
 }
+}
 ################################################################################
 
 #######################universal format#########################################
@@ -169,7 +171,7 @@ rawinfofile=rawinfofile[,c(1:rawinfofilecoln,which(cnasum<=mean(cnasum)+2*sd(cna
 
 #######################user setup options#######################################
 #setup organism
-if (pipestep!="Generate Input File"&pipestep!="Overview Figures") {
+if (pipestep!="Generate Special Input File"&pipestep!="Overview Figures") {
 phylo=dlgList(c("Homo sapiens","Mus musculus","Rattus norvegicus",
 "Saccharomyces cerevisiae","Caenorhabditis elegans","Danio rerio",
 "Drosophila melanogaster","Escherichia coli","Arabidopsis thaliana",
@@ -178,27 +180,30 @@ if(phylo=="Other") {phylo=dlgInput("Please enter organism scientific name: (Capi
 letter and nothing else, space between words)")$res}}
 
 #setup imputation and normalization
-if (pipestep!="Generate Input File"&pipestep!="Annotation") {
+if (pipestep!="Generate Special Input File"&pipestep!="Annotation") {
 impnorm=dlgList(c("Neither","Only normalize","Both normalize and impute"),
 title="Imputation and normalization")$res}
 ################################################################################
 
 #######################group setup##############################################
 #perform group setup from groupSetup.R
-if (pipestep!="Generate Input File"&pipestep!="Annotation") {
+if (pipestep!="Generate Special Input File"&pipestep!="Annotation") {
 source(paste0(codepth,"groupSetup.R"))
 }
 ################################################################################
 
 #######################normalization and imputation#############################
-if (pipestep!="Generate Input File"&pipestep!="Annotation") {
+if (pipestep!="Generate Special Input File"&pipestep!="Annotation") {
 msgBox("Now proceeding to normalization and imputation.")
 if (impnorm=="Both normalize and impute") {
 #dlgMessage("Caution with imputation, if there's time, another run without 
 #imputation is recommended as control")
 
 rintfile[rintfile==0]=NA
+#quantile normalize dataset
 quantile_normalized_matrix = normalize_data_dm(as.matrix(rintfile),normalize_func = 'quantile',log_base = 2, offset = 1)
+
+#if there are rows with less than 4 non-NA values, imputation cannot be done, user is forced to choose between neither or only normalize 
 if (min(unlist(apply(quantile_normalized_matrix,1,FUN=function(x) sum(!is.na(x)))))<4) {
 dlgMessage("Not all rows has 4 or more non-NA values,Imputation cannot be done. Please try row filtering in the next run if imputation is insisted.")
 impnorm=character()
@@ -217,7 +222,9 @@ if (impgrpyes=="yes") {
 impgrp=character()
 while (length(impgrp)==0) {
 impgrp=dlgList(names(group),title="Which group label?")$res}
+#get group order info for selected grouping method 
 impgrpo=as.factor(group[[which(names(group)==impgrp)]])
+#perform imputation 
 rtransifile=msImpute(quantile_normalized_matrix,method="v2-mnar",group=impgrpo)
 } else {
 #if (min(unlist(apply(quantile_normalized_matrix,1,FUN=function(x) sum(!is.na(x)))))<4) {
@@ -228,14 +235,18 @@ rtransifile=msImpute(quantile_normalized_matrix,method="v2-mnar",group=impgrpo)
 #impgrpo=as.factor(group[[which(names(group)==impgrp)]])
 #rtransifile=msImpute(quantile_normalized_matrix,method="v2-mnar",group=impgrpo)
 #} else {
+
+#if no grouping method chosen, use a different imputation method from the same package 
 rtransifile=msImpute(quantile_normalized_matrix,method="v2")}
 rawdatafile[,7:ncol(rawdatafile)]=2^rtransifile-1
 }}
 if (impnorm=="Only normalize") {
+#median normalize dataset 
 rtransifile=normalize_data_dm(rintfile,normalize_func = 'medianCentering',log_base = 2, offset = 1)
 rawdatafile[,7:ncol(rawdatafile)]=2^rtransifile
 } 
 if (impnorm=="Neither") { 
+#if missing value, or 0, exists, add 1 to all values 
 if (sum(rawdatafile[,7:ncol(rawdatafile)]==0)>0) {
 rawdatafile[,7:ncol(rawdatafile)]=rawdatafile[,7:ncol(rawdatafile)]+1} 
  }

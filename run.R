@@ -3,10 +3,12 @@ if(!require(svDialogs)){install.packages("svDialogs")}
 library(svDialogs)
 dlgMessage("Please select run.R file again")
 codedr=file.choose()
+#get code location 
 codepth=substr(codedr,1,gregexpr("\\\\",codedr)[[1]][length(gregexpr("\\\\",codedr)[[1]])])
 ################################################################################
 
 #######################Running analysis#########################################
+#pipeline run structure
 source(paste0(codepth,"inputManage.R"))
 
 if (pipestep=="Generate Special Input File") { 

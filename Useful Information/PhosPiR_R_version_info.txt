@@ -9,7 +9,6 @@ ggplot2_3.3.3
 openxlsx_4.2.3
 reshape2_1.4.4
 pheatmap_1.0.12
-rcdk_3.5.0
 fingerprint_3.5.7
 vegan_2.5-7
 rgl_0.104.16
