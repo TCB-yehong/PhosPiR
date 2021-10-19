@@ -16,3 +16,4 @@ Example data from the videos with complementary group setup input file and compa
 Text file containing R and R package versions during the development of PhosPiR can be found in Useful Information folder.
 A STRING interaction color key can also be found in the same folder.
 
+copyright (c) 2021 TCB-yehong subject to the terms and conditions of the Attribution-NonCommercial 4.0 International License
