@@ -208,7 +208,7 @@ cpridx=grpcpidx[match(volcgrpselec,volcop)]
 #if all doesn't, give warning and move on
 cprgdidx=c()
 for (i in cpridx) {
-tempgrpcol=grep(as.character(i),transfanan)
+tempgrpcol=grep(paste0("Comparison",as.character(i),"_"),transfanan)
 if (length(grep("Pvalue",transfanan[tempgrpcol]))+length(grep("FDR",transfanan[tempgrpcol]))>0) {
 cprgdidx=c(cprgdidx,i)}}
 if (length(cprgdidx)==0) {
@@ -218,8 +218,9 @@ msgBox("Note: some comparisons are missing P-value and FDR calcuation, they are 
 
 #if more than 1 stats test was performed, extract all columns that fits the stat test descriptions
 if (length(cprgdidx)>0) {
-tempgdgrpcol=transfanan[grep(paste(cprgdidx,collapse="|"),
-unlist(lapply(transfanan,FUN=function(x) strsplit(x,"_")[[1]][1])))]
+tempgdgrpcol=transfanan[grep(paste(unlist(lapply(cprgdidx,FUN=function(x) paste0("Comparison",x,"_"))),collapse="|"),
+#unlist(lapply(transfanan,FUN=function(x) strsplit(x,"_")[[1]][1])))]
+transfanan)]
 
 #processing tukey post-hoc specifically as so many sets of fold changes are included 
 if (sum(grepl("Tukey",tempgdgrpcol))>0) {
