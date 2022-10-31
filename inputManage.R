@@ -1,7 +1,7 @@
 #######################download all libraries###################################
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-#	BiocManager::install(version = BiocManager::version(),ask=F,update=F)
+#	BiocManager::install(version = BiocManager::version(),ask=F,update=TRUE)
 if(!require(proBatch)){BiocManager::install("proBatch",update=F,ask=F)}
 library(proBatch)
 if(!require(msImpute)){	BiocManager::install("msImpute",update=F,ask=F)}
@@ -124,6 +124,18 @@ format, and have reverse sequence and potential
 contaminants removed to ensure accurate analysis. 
 Thank you!")
 }
+
+#clean gene names
+genecleaned=unlist(lapply(rawdatafile$Gene.names ,FUN=function(x) {
+cleaned=c()
+if (!is.na(x)) {
+temp=strsplit(x,";|,|, ")
+for (k in 1:length(temp)) {
+cleaned=c(cleaned,temp[[k]][1])
+} } else {cleaned=c(cleaned,NA)}
+return(cleaned)}))
+rawdatafile$Gene.names=genecleaned
+
 #internal check row uniqueness
 ucheck=sum(table(paste(rawdatafile$Protein,rawdatafile$Position,sep="_"))!=1) 
 if (ucheck>0) {
@@ -247,7 +259,8 @@ rawdatafile[,7:ncol(rawdatafile)]=2^rtransifile
 } 
 if (impnorm=="Neither") { 
 #if missing value, or 0, exists, add 1 to all values 
-if (sum(rawdatafile[,7:ncol(rawdatafile)]==0)>0) {
+if (sum(rawdatafile[,7:ncol(rawdatafile)]==0)>0|sum(is.na(rawdatafile[,7:ncol(rawdatafile)]))>0) {
+rawdatafile[,7:ncol(rawdatafile)][is.na(rawdatafile[,7:ncol(rawdatafile)])]=0
 rawdatafile[,7:ncol(rawdatafile)]=rawdatafile[,7:ncol(rawdatafile)]+1} 
  }
 }

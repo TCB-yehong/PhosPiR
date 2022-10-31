@@ -23,9 +23,14 @@ pvalchoice=dlgList(c("T.test_Pvalue","T.test_FDR","Wilcox.test_Pvalue","Wilcox.t
 #extract kinase info for target organism from library originated from PhosphoSitePlus 
 kinasedb=read.csv(paste0(codepth,"PhosphoSitePlus_Kinase_Dataset.csv"),stringsAsFactors=F)
 kinorg=kindbinfo[kinphylock,2]
-kinaseinfo=kinasedb[which(kinasedb$KIN_ORGANISM==kinorg&kinasedb$SUB_ORGANISM==kinorg),]
+kinorgchoice=dlgList(c("All organism",kinorg),title="Preferred kinase organism range")$res
+if (kinorgchoice=="All organism") {
+kinaseinfo=kinasedb[which(kinasedb$SUB_ORGANISM==kinorg),]
+} else {
+kinaseinfo=kinasedb[which(kinasedb$KIN_ORGANISM==kinorg&kinasedb$SUB_ORGANISM==kinorg),]}
 kinasefile=as.matrix(data.frame(kinase=kinaseinfo$GENE,substrate=kinaseinfo$SITE_...7_AA))
-pwms=buildPWM(kinasefile)
+winlen=min(nchar(kinasefile[,2]))
+pwms=buildPWM(kinasefile,substrate_length=winlen)
 
 for (i in 1:length(grpcompare)) {
 #for each comparison, if stats result of the comparison include user selected p-val and a fold change,

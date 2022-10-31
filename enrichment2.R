@@ -1,6 +1,7 @@
 #######################download all libraries###################################
 if(!require(clusterProfiler)){BiocManager::install("clusterProfiler",update=F,ask=F)}
 library(clusterProfiler)
+options(clusterProfiler.download.method = "wininet")
 if(!require(pathview)){BiocManager::install("pathview",update=F,ask=F)}
 library(pathview)
 if(!require(vroom)){install.packages("vroom")}

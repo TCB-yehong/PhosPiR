@@ -7,6 +7,8 @@ if(!require(gplots)){install.packages("gplots")}
 library(gplots)
 if(!require(plyr)){install.packages("plyr")}
 library(plyr)
+if(!require(tiff)){install.packages("tiff")}
+library(tiff)
 ################################################################################
 
 #######################protein network##########################################
@@ -265,7 +267,7 @@ ht=wd
 
 #tiff figure is created for circosplot 
 fname=paste0("Network/",substring(tgtname,1,gregexpr("\\.",tgtname)[[1]][1]-1),"_ChordDiagram.tiff")
-tiff(filename =fname, units="in", width=wd, height=ht, res=300)
+tiff(filename =fname, units="in", width=wd, height=ht, compression="lzw", res=300)
 #making the actual circosplot 
 chordDiagram(tempknwinfo,group = knwgrp,transparency = choralpha,big.gap = gap,
     annotationTrack = c("grid", "axis"),
@@ -291,9 +293,11 @@ highlight.sector(names(knwgrp[which(knwgrp==unique(knwgrp)[j])]), track.index = 
 circos.clear()
 dev.off()
 
+
+
 #a second style circosplot with larger labels is created and saved in tiff figure file 
 fname=paste0("Network/",substring(tgtname,1,gregexpr("\\.",tgtname)[[1]][1]-1),"_ChordDiagram_style2.tiff")
-tiff(filename =fname, units="in", width=wd, height=ht, res=300)
+tiff(filename =fname, units="in", width=wd, height=ht, compression="lzw",res=300)
 chordDiagram(tempknwinfo,group = knwgrp,transparency = choralpha,big.gap = gap,
     annotationTrack = c("grid", "axis"),
     preAllocateTracks = list(
@@ -322,6 +326,7 @@ highlight.sector(names(knwgrp[which(knwgrp==unique(knwgrp)[j])]), track.index = 
 }
 circos.clear()
 dev.off()
+
 }	
 }
 }}
