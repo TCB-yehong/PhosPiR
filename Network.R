@@ -18,7 +18,7 @@ if (phylo %in% strspecies$official_name_NCBI) {
 dir.create("Network",showWarning=F)
 msgBox("Now proceeding to Network Analysis.")
 spcid=strspecies$X...taxon_id[match(phylo,strspecies$official_name_NCBI)]
-string_db <- STRINGdb$new( version="11", species=spcid ,score_threshold=0, input_directory="" )
+string_db <- STRINGdb$new( version="11.5", species=spcid ,score_threshold=0, input_directory="" )
 #statsRes$Protein=pepalllabcleaned
 #cleanedids=data.frame(Protein=pepalllabcleaned,Gene.names=statsRes$Gene.names)
 #globmapping=string_db$map(cleanedids, "Protein", removeUnmappedRows = TRUE)
