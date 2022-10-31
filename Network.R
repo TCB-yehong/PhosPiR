@@ -1,7 +1,7 @@
 #######################download all libraries###################################
 if(!require(circlize)){install.packages("circlize")}
 library(circlize)
-if(!require(STRINGdb)){BiocManager::install("STRINGdb",update=F,ask=F)}
+if(!require(STRINGdb)){BiocManager::install("STRINGdb",update=T,ask=F)}
 library(STRINGdb)
 if(!require(gplots)){install.packages("gplots")}
 library(gplots)
@@ -12,7 +12,7 @@ library(tiff)
 ################################################################################
 
 #######################protein network##########################################
-strspecies=read.delim("https://stringdb-static.org/download/species.v11.0.txt")
+strspecies=read.delim("https://stringdb-static.org/download/species.v11.5.txt")
 #check for species, download respective species data from STRING database
 if (phylo %in% strspecies$official_name_NCBI) {
 dir.create("Network",showWarning=F)
