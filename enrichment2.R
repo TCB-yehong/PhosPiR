@@ -1,13 +1,11 @@
 #######################download all libraries###################################
-if(!require(clusterProfiler)){BiocManager::install("clusterProfiler",update=F,ask=F)}
+if(!require(clusterProfiler)){BiocManager::install("clusterProfiler",update=T,ask=F)}
 library(clusterProfiler)
 options(clusterProfiler.download.method = "wininet")
 if(!require(pathview)){BiocManager::install("pathview",update=F,ask=F)}
 library(pathview)
 if(!require(vroom)){install.packages("vroom")}
 library(vroom)
-if(!require(textreadr)){install.packages("textreadr")}
-library(textreadr)
 ################################################################################
 
 #######################enrichment run###########################################
@@ -330,7 +328,8 @@ setwd(wddflt)
 dir.create("Enrichment/Wikipathway enrichment",showWarnings=F)
 setwd(paste0(wddflt,"/Enrichment/Wikipathway enrichment"))
 URLwikidir="http://data.wikipathways.org/current/gmt/"
-wikilist=read_html(URLwikidir)
+wikiline=readLines(URLwikidir)
+wikilist=gsub(" ","",gsub("<.*?>","",wikiline))
 wikidbname=wikilist[grep(gsub(" ","_",phylo),wikilist)]
 download.file(paste0(URLwikidir,wikidbname),wikidbname)
 

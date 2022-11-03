@@ -197,7 +197,7 @@ write.csv(bghubenrich,paste0("Network/",substring(names(nwgenes)[i],1,gregexpr("
 bghubenrich=bghubenrich[,-which(colnames(bghubenrich)=="P-value")]
 bghubenrich$hubs=rownames(bghubenrich)
 
-bghubenrichip=melt(bghubenrich,id.vars=c("hubs","FDR"))
+bghubenrichip=reshape2::melt(bghubenrich,id.vars=c("hubs","FDR"))
 colnames(bghubenrichip)[colnames(bghubenrichip)=="FDR"]="FDR"
 labdat = ddply(bghubenrichip, .(hubs), summarize, ypos= max(value)*1.1, FDR=FDR[1])
 	 
