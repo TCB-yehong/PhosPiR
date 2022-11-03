@@ -4,8 +4,8 @@ library(clusterProfiler)
 options(clusterProfiler.download.method = "wininet")
 if(!require(pathview)){BiocManager::install("pathview",update=F,ask=F)}
 library(pathview)
-if(!require(vroom)){install.packages("vroom")}
-library(vroom)
+#if(!require(vroom)){install.packages("vroom")}
+#library(vroom)
 ################################################################################
 
 #######################enrichment run###########################################
@@ -366,14 +366,18 @@ setwd(wddflt)
 dir.create("Enrichment/Cell Marker enrichment",showWarnings=F)
 setwd(paste0(wddflt,"/Enrichment/Cell Marker enrichment"))
 if (phylo=="Homo sapiens") {
-URL="http://bio-bigdata.hrbmu.edu.cn/CellMarker/download/Human_cell_markers.txt"
+URL="http://bio-bigdata.hrbmu.edu.cn/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx"
 } else {
-URL="http://bio-bigdata.hrbmu.edu.cn/CellMarker/download/Mouse_cell_markers.txt"
+URL="http://bio-bigdata.hrbmu.edu.cn/CellMarker/CellMarker_download_files/file/Cell_marker_Mouse.xlsx"
 }
-cell_markers <- vroom::vroom(URL) %>%
-   tidyr::unite("cellMarker", tissueType, cancerType, cellName, sep=", ") %>% 
-   dplyr::select(cellMarker, geneID) %>%
-   dplyr::mutate(geneID = strsplit(geneID, ', '))
+#cell_markers <- vroom::vroom(URL) %>%
+#   tidyr::unite("cellMarker", tissueType, cancerType, cellName, sep=", ") %>% 
+#   dplyr::select(cellMarker, geneID) %>%
+#   dplyr::mutate(geneID = strsplit(geneID, ', '))
+cell_markers=read.xlsx(URL) %>%
+   tidyr::unite("cellMarker", tissue_type, cancer_type, cell_type, cell_name, sep=", ") %>% 
+   dplyr::select(cellMarker, GeneID)
+
    
 for (i in 1:length(genesets)) {
 kk2 <- enricher(names(genesets[[i]]), TERM2GENE=cell_markers, minGSSize=1)
