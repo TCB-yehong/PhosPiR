@@ -74,10 +74,11 @@ sigkinase=unique(swing_out$scores$kinase[which((swing_out$scores$p_greater<0.05|
 if (length(sigkinase)>0) {
 for (j in sigkinase) {
 tempkinsub=kinasefile[kinasefile[,1]==j,]
+if (nrow(tempkinsub)>0) {
 tempkinpwm=buildPWM(tempkinsub)
 tiff(paste0("Kinase Analysis/Comparison",i,"_significantly_changing_kinase_",j,".tiff"), units="in", width=9, height=5, res=150)
 tempkinfig=viewPWM(tempkinpwm,which_pwm=j,view_pwm=T,color_scheme="shapely")
-dev.off()}
+dev.off()}}
 }
 
 #get score table for substrate in each predicted kinase 

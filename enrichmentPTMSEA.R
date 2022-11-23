@@ -172,8 +172,8 @@ for(i in names(gct.files)){
     cat('Running ssSGEA on:', sub('.*/', '', input.ds), '\n\n')
 
     ## run ssGSEA
-    gsea.res <- ssGSEA2(input.ds, gene.set.databases=gene.set.databases, sample.norm.type=sample.norm.type, weight=weight,statistic=statistic, output.score.type = output.score.type, nperm  = nperm, min.overlap  = min.overlap, correl.type = correl.type, output.prefix = paste(i), par=par, 
-                        spare.cores=spare.cores, param.file=F, export.signat.gct = export.signat.gct, extended.output = extended.output )
+    gsea.res <- tryCatch(ssGSEA2(input.ds, gene.set.databases=gene.set.databases, sample.norm.type=sample.norm.type, weight=weight,statistic=statistic, output.score.type = output.score.type, nperm  = nperm, min.overlap  = min.overlap, correl.type = correl.type, output.prefix = paste(i), par=par, 
+                        spare.cores=spare.cores, param.file=F, export.signat.gct = export.signat.gct, extended.output = extended.output ),error=function(e) "An error has occurred in the calculation, the result came out empty.")
 
     ## save object
     save(gsea.res, file=paste(i, '.RData', sep=''))
@@ -202,7 +202,8 @@ for(i in names(gct.files)){
     
     ## expression data only
     input <- input.gct@mat
-   
+    
+    if (file.exists(paste( i, '-scores(_[0-9]*x[0-9*]|)', '.gct', sep=''))) {	   
     ## import enrichment scores and p-values
     gsea.score.gct <- parse.gctx(dir('.', pattern=paste( i, '-scores(_[0-9]*x[0-9*]|)', '.gct', sep=''))) 
     gsea.score <- gsea.score.gct@mat
@@ -308,7 +309,7 @@ for(i in names(gct.files)){
 	}
 	par(mfrow=c(1, 1))
 	dev.off()
-    } ## end loop over gene sets
+    }} ## end loop over gene sets
 
     if(length(gct.files) > 1)
         setwd('..')
