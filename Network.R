@@ -151,6 +151,7 @@ set.seed(123)
 #extract mappings for all hubs and get their STRING ID 
 tempglob=globmapping[-na.omit(which(globmapping$Gene.names %in% names(temphubs))),]
 temphubid=globmapping$STRING_id[match(names(temphubs),globmapping$Gene.names)]
+if (nrow(tempglob)>0) {
 
 #generate 1000 background networks for each hub
 bgintlist=c()
@@ -220,6 +221,7 @@ postscript(paste0("Network/",substring(names(nwgenes)[i],1,gregexpr("\\_",names(
 print(hubgg)
 dev.off()
 
+}
 }
 }
 }
