@@ -36,6 +36,7 @@ hubenrichyes=dlgMessage("Check hub interaction enrichment for your specific prot
 
 #function for cleaning up accession IDs
 for (i in 1:length(nwgenes)) {
+if (nrow(nwgenes[[i]])>1) {
 cleanedsigacc=unlist(lapply(nwgenes[[i]]$Protein ,FUN=function(x) {
 cleaned=c()
 if (!is.na(x)) {
@@ -221,6 +222,7 @@ postscript(paste0("Network/",substring(names(nwgenes)[i],1,gregexpr("\\_",names(
 print(hubgg)
 dev.off()
 
+}
 }
 }
 }
