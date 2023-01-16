@@ -3,7 +3,7 @@ PhosPiR is part of Coffey lab software. More useful software will be developed, 
 
 PhosPiR is an automatic pipeline to analyze phosphoproteomics data. It is fully tested on Windows.
 To initiate PhosPiR pipeline, drag the run.R file to an R window.
-R version 4.0.3 for Windows can be downloaded from https://cran.r-project.org/bin/windows/base/old/4.0.3/
+R version 4.2.2 for Windows can be downloaded from https://cran.r-project.org/bin/windows/base/old/4.2.2/
 To download the pipeline, click the "Code" button on the upper right, and select "Download ZIP" from the drop down menu.
 
 A few things to pay attention to:
