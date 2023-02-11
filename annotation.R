@@ -143,6 +143,9 @@ if (gregexpr("\\_",temporiseq)[[1]][1]==1) {
 tempadd=length(gregexpr("\\_",temporiseq)[[1]])}
 temporiseq=gsub("_","",temporiseq)}
 #align seuqnece window from input data to FASTA sequence of whole protein 
+if (grepl('x',temporiseq)) {
+temporiseq=gsub('x','X',temporiseq)
+}
 sitealign=pairwiseAlignment(AAString(temporiseq),AAString(as.character(tempinfo$reviewSeq)),
 type="overlap",substitutionMatrix="BLOSUM100")
 #keep position with good alignment quality, otherwise return NA 

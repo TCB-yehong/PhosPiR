@@ -106,6 +106,7 @@ datakinnet=rbind(datakinnet,cbind(colnames(data_merge)[k],data_merge[j,c("annota
 
 #polish dataframe format
 datakinnet=as.data.frame(datakinnet)
+if (nrow(datakinnet)>0) {
 colnames(datakinnet)=c("Kinase","Substrate","FoldChange","Pvalue")
 #extract a version with only significant comparison changes 
 sigkinnet=datakinnet[datakinnet$Pvalue<0.05,]
@@ -113,6 +114,7 @@ sigkinnet=datakinnet[datakinnet$Pvalue<0.05,]
 write.csv(datakinnet,paste0("Kinase Analysis/Comparison",i,"_kinaseNetwork.csv"),row.names=F)
 if (nrow(sigkinnet)>0) {
 write.csv(sigkinnet,paste0("Kinase Analysis/Comparison",i,"_significant_kinaseNetwork.csv"),row.names=F)}
+}
 }
 }}
 }
