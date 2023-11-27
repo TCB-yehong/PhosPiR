@@ -2,14 +2,31 @@
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 #	BiocManager::install(version = BiocManager::version(),ask=F,update=F)
-if(!require(proBatch)){BiocManager::install("proBatch",update=F,ask=F)}
-library(proBatch)
-if(!require(msImpute)){	BiocManager::install("msImpute",update=F,ask=F)}
+if(!require(htmltools)){BiocManager::install("htmltools",update=F,ask=F)}
+library(htmltools)
+if(!require(msImpute)){BiocManager::install("msImpute",update=F,ask=F)}
 library(msImpute)
 if(!require(ggplot2)){install.packages("ggplot2")}
 library(ggplot2)
 if(!require(openxlsx)){install.packages("openxlsx")}
 library(openxlsx)
+if(!require(remotes)){install.packages("remotes")}
+library(remotes)
+if(!require(proBatch)){remotes::install_github("symbioticMe/proBatch", upgrade='never')}
+library(proBatch)
+#bioc_deps <- c("GO.db", "impute", "preprocessCore", "pvca","sva" )
+#cran_deps <- c("corrplot", "data.table", "ggplot2", "ggfortify","lazyeval", "pheatmap", "reshape2", "rlang", 
+#               "tibble", "dplyr", "tidyr", "wesanderson","WGCNA") 
+#for (i in bioc_deps) {
+#if(!require(i, character.only = TRUE)){BiocManager::install(i,update=F,ask=F)}
+#}
+#for (i in cran_deps) {
+#if(!require(i, character.only = TRUE)){install.packages(i,update=F,ask=F)}
+#}
+#download.file("https://github.com/symbioticMe/proBatch/archive/refs/heads/master.zip", 
+#              destfile = "proBatch-master.zip")
+#unzip("proBatch-master.zip")
+#install.packages("proBatch-master", repos = NULL, type = "source")
 ################################################################################
 
 #######################deposit location#########################################

@@ -113,6 +113,10 @@ write.csv(rawinfofile,"Statistical Analysis/Data_background_info.csv",row.names=
 cat("Analysis complete. Please choose cutoffs for significantly changing entries
 (your 'Significant Lists').")
 
+gsigmethod=dlgList(c("Read cutoff selection from file (.csv)","Go through cutoff selection process"),
+title="Select cutoff setup method")$res
+
+if ("Go through cutoff selection process" %in% gsigmethod) {
 testsep=unlist(lapply(transfanan,FUN=function(x) unlist(strsplit(x,"_"))[1]))
 dir.create("Statistical Analysis/Significant Lists",showWarnings=F)
 coinfo=c()
@@ -152,8 +156,10 @@ if(length(cochoice)==1){
 coinfo=rbind(coinfo,c(paste0("Comparison",i,"cutoff",cotimes),paste0(rownames(grpcompare[[i]]),collapse=","),paste0(grpcompare[[i]][,1]+6,collapse=","),names(grpcompare)[i],paste0(sort(unique(grpcompare[[i]][,2]),decreasing=T),collapse=" vs "),cochoice,conum,cocol))
 } else {
 coinfo=rbind(coinfo,c(paste0("Comparison",i,"cutoff",cotimes),paste0(rownames(grpcompare[[i]]),collapse=","),paste0(grpcompare[[i]][,1]+6,collapse=","),names(grpcompare)[i],paste0(sort(unique(grpcompare[[i]][,2]),decreasing=T),collapse=" vs "),paste0(cochoice,collapse=","),paste0(conum,sep="",collapse=","),paste0(cocol,sep="",collapse=",")))}
+if (sum(table(srcandi)==length(cochoice))>0) {
 sigrec=transfana[as.numeric(names(table(srcandi))[which(table(srcandi)==length(cochoice))]),c(1:6,cocol)] #sig entries cbind with name rows in transf
 write.csv(sigrec,paste0("Statistical Analysis/Significant Lists/Comparison",i,"_cutoff",cotimes,"_sigEntries.csv"),row.names=F)
+}
 }
 
 #repeat if user would like to select another cutoff 
@@ -170,6 +176,41 @@ msgBox(paste0("Moving on to comparison ",i+1,"."))}}
 coinfo=as.data.frame(coinfo,stringsAsFactors=F)
 colnames(coinfo)=c("Siglist","Samples_involved","Data_columns_involved","Group_category","Group_labels_involved","Cutoff_stats","Cutoff_values","Cutoff_value_columns")
 write.csv(coinfo,"Statistical Analysis/Siglists_cutoff_info.csv",row.names=F)
+} else {
+dir.create("Statistical Analysis/Significant Lists",showWarnings=F)
+cutoff_df=c()
+cutoff_colname=c()
+for (i in 1:length(grpcompare)) {
+cutoff_df=cbind(cutoff_df,rep('',times=length(transfanan)))
+cutoff_colname=c(cutoff_colname,paste0('Comparison',i,'_cutoff1'))
+}
+cutoff_df=as.data.frame(cutoff_df)
+colnames(cutoff_df)=cutoff_colname
+rownames(cutoff_df)=transfanan
+write.csv(cutoff_df,'Statistical Analysis/cutoff_selection_template.csv')
+
+cutofffile=dlg_open(title = "Select cutoff file with correct format (Template is saved in Statistical Analysis folder)",multiple=F)$res
+cofile=read.csv(cutofffile,stringsAsFactors=F,row.name=1)
+for (i in 1:ncol(cofile)) {
+tempcutoffs=rownames(cofile)[!is.na(cofile[i])]
+tempcovalues=cofile[!is.na(cofile[i]),i]
+tempfc=grepl('FoldChange',tempcutoffs)
+tempselected=1:nrow(transfana)
+cocols=c()
+for (j in 1:length(tempcutoffs)) {
+cocols=c(cocols,match(tempcutoffs[j],colnames(transfana)))
+if (tempfc[j]) {
+tempselected=intersect(tempselected,which(abs(transfana[cocols[j]])>tempcovalues[j]))
+} else {
+tempselected=intersect(tempselected,which(transfana[cocols[j]]<tempcovalues[j]))
+}
+}
+if (length(tempselected)>0) {
+sigrec=transfana[tempselected,c(1:6,cocols)]
+write.csv(sigrec,paste0("Statistical Analysis/Significant Lists/",colnames(cofile)[i],"_sigEntries.csv"),row.names=F)
+}
+}
+}
 
 #volcano plot
 #choose max. 4 comparisons from 2 group comparisons (check if it's less than 4)

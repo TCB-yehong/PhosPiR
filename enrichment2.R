@@ -1,7 +1,14 @@
 #######################download all libraries###################################
-if(!require(clusterProfiler)){BiocManager::install("clusterProfiler",update=T,ask=F)}
+if(!require(remotes)){install.packages("remotes")}
+library(remotes)
+BiocManager::install("GOSemSim",update=F,ask=F)
+if(!require(clusterProfiler)){remotes::install_github("YuLab-SMU/clusterProfiler", upgrade='always')}
 library(clusterProfiler)
-options(clusterProfiler.download.method = "wininet")
+if(!require(createKEGGdb)){remotes::install_github("YuLab-SMU/createKEGGdb", upgrade='never')}
+library(createKEGGdb)
+#if(!require(clusterProfiler)){BiocManager::install("clusterProfiler",update=T,ask=F)}
+#library(clusterProfiler)
+#options(clusterProfiler.download.method = "wininet")
 if(!require(pathview)){BiocManager::install("pathview",update=F,ask=F)}
 library(pathview)
 #if(!require(vroom)){install.packages("vroom")}
@@ -26,6 +33,10 @@ msgBox("Now proceeding to Enrichment Analysis.")
 dir.create("Enrichment",showWarnings=F)
 #download species database
 genodb=dbinfo[phylocheck,2]
+#detach("package:KEGG.db", unload=TRUE)
+createKEGGdb::create_kegg_db(dbinfo[phylocheck,3])
+install.packages("KEGG.db_1.0.tar.gz", repos=NULL,type="source")
+library(KEGG.db)
 if(!require(genodb,character.only=T)){BiocManager::install(genodb,update=F,ask=F)}
 library(genodb,character.only=T)
 
@@ -131,7 +142,8 @@ kk2=enrichKEGG(gene = names(genesets[[i]]),
                qvalueCutoff = 0.25,
                pAdjustMethod = "BH",
                minGSSize = 10,
-               maxGSSize = 500)
+               maxGSSize = 500,
+			   use_internal_data=T)
 #kk2=setReadable(kk2, eval(as.name(genodb)))
 kk3=enrichKEGG(gene = names(genesets[[i]]), 
 #			   universe=names(allgeneset[[i]]),
@@ -140,7 +152,8 @@ kk3=enrichKEGG(gene = names(genesets[[i]]),
                qvalueCutoff = 0.25,
                pAdjustMethod = "BH",
                minGSSize = 10,
-               maxGSSize = 500)
+               maxGSSize = 500,
+			   use_internal_data=T)
 #kk3=setReadable(kk3, eval(as.name(genodb)))
 
 #if there are any enriched pathways in dataset background enrichment:
@@ -361,43 +374,43 @@ unlink("Enrichment/Wikipathway enrichment",recursive=T)}
 ###cellmarker enrichment###
 #performs cell marker enrichment if organism is human or mouse, and creates dotplot and csv record of results whenever there are results
 #See KEGG enrichment section for specific code descriptions 
-if (phylo=="Homo sapiens"|phylo=="Mus musculus"){
-setwd(wddflt)
-dir.create("Enrichment/Cell Marker enrichment",showWarnings=F)
-setwd(paste0(wddflt,"/Enrichment/Cell Marker enrichment"))
-if (phylo=="Homo sapiens") {
-URL="http://bio-bigdata.hrbmu.edu.cn/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx"
-} else {
-URL="http://bio-bigdata.hrbmu.edu.cn/CellMarker/CellMarker_download_files/file/Cell_marker_Mouse.xlsx"
-}
-#cell_markers <- vroom::vroom(URL) %>%
-#   tidyr::unite("cellMarker", tissueType, cancerType, cellName, sep=", ") %>% 
-#   dplyr::select(cellMarker, geneID) %>%
-#   dplyr::mutate(geneID = strsplit(geneID, ', '))
-cell_markers=read.xlsx(URL) %>%
-   tidyr::unite("cellMarker", tissue_type, cancer_type, cell_type, cell_name, sep=", ") %>% 
-   dplyr::select(cellMarker, GeneID)
+#if (phylo=="Homo sapiens"|phylo=="Mus musculus"){
+#setwd(wddflt)
+#dir.create("Enrichment/Cell Marker enrichment",showWarnings=F)
+#setwd(paste0(wddflt,"/Enrichment/Cell Marker enrichment"))
+#if (phylo=="Homo sapiens") {
+#URL="http://bio-bigdata.hrbmu.edu.cn/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx"
+#} else {
+#URL="http://bio-bigdata.hrbmu.edu.cn/CellMarker/CellMarker_download_files/file/Cell_marker_Mouse.xlsx"
+#}
+###cell_markers <- vroom::vroom(URL) %>%
+###   tidyr::unite("cellMarker", tissueType, cancerType, cellName, sep=", ") %>% 
+###   dplyr::select(cellMarker, geneID) %>%
+###   dplyr::mutate(geneID = strsplit(geneID, ', '))
+#cell_markers=read.xlsx(URL) %>%
+#   tidyr::unite("cellMarker", tissue_type, cancer_type, cell_type, cell_name, sep=", ") %>% 
+#   dplyr::select(cellMarker, GeneID)
 
    
-for (i in 1:length(genesets)) {
-kk2 <- enricher(names(genesets[[i]]), TERM2GENE=cell_markers, minGSSize=1)
-	if (!is.null(nrow(kk2))) {
-		if (nrow(kk2)>0) {
-		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk3)
-		wd=3+max(nchar(kk2$Description))/4+(15/(5+log(nrow(kk2),base=1.22)))
-		fname=paste0(names(genesets)[[i]],"_CellMarker_enrichment_dotplot.tiff")
-		ftitle=paste0(names(genesets)[[i]],"_Cell Marker Enrichment")
-		catcount=nrow(kk2)
-		tiff(filename =fname, units="in", width=wd, height=ht, res=100)
-		print(dotplot(kk2,showCategory = catcount,title=ftitle))
-		dev.off()
-		fname2=paste0(names(genesets)[[i]],"_CellMarker_enrichmentResult.csv")
-		write.csv(kk2,file=fname2)}}
-}
-if(length(dir(all.files=TRUE))<=2) {
-setwd(wddflt)
-unlink("Enrichment/Cell Marker enrichment",recursive=T)}
-}
+#for (i in 1:length(genesets)) {
+#kk2 <- enricher(names(genesets[[i]]), TERM2GENE=cell_markers, minGSSize=1)
+#	if (!is.null(nrow(kk2))) {
+#		if (nrow(kk2)>0) {
+#		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk3)
+#		wd=3+max(nchar(kk2$Description))/4+(15/(5+log(nrow(kk2),base=1.22)))
+#		fname=paste0(names(genesets)[[i]],"_CellMarker_enrichment_dotplot.tiff")
+#		ftitle=paste0(names(genesets)[[i]],"_Cell Marker Enrichment")
+#		catcount=nrow(kk2)
+#		tiff(filename =fname, units="in", width=wd, height=ht, res=100)
+#		print(dotplot(kk2,showCategory = catcount,title=ftitle))
+#		dev.off()
+#		fname2=paste0(names(genesets)[[i]],"_CellMarker_enrichmentResult.csv")
+#		write.csv(kk2,file=fname2)}}
+#}
+#if(length(dir(all.files=TRUE))<=2) {
+#setwd(wddflt)
+#unlink("Enrichment/Cell Marker enrichment",recursive=T)}
+#}
 setwd(wddflt)
 }
 ################################################################################

@@ -1,6 +1,8 @@
 #######################download all libraries###################################
 if(!require(biomaRt)){BiocManager::install("biomaRt",update=F,ask=F)}
 library(biomaRt)
+if(!require(retry)){BiocManager::install("retry",update=F,ask=F)}
+library(retry)
 if(!require(Biostrings)){BiocManager::install("Biostrings",update=F,ask=F)}
 library(Biostrings)
 if(!require(GenomicAlignments)){BiocManager::install("GenomicAlignments",update=F,ask=F)}
@@ -13,8 +15,24 @@ library(UniprotR)
 
 #######################getting reviewed accession###############################
 #check if ensembl includes target organism, and get library number for organism 
-ensembl=useMart("ensembl")
-genedblist=listDatasets(ensembl)
+#ensembl=useMart("ensembl")
+ensembl <- NULL
+attempt1 <- 0
+while( is.null(ensembl) && attempt1 <= 100 ) {
+  attempt1 <- attempt1 + 1
+  try(
+    ensembl<-useMart("ensembl")
+  )
+}
+
+genedblist <- NULL
+attempt2 <- 0
+while( is.null(genedblist) && attempt2 <= 100 ) {
+  attempt2 <- attempt2 + 1
+  try(
+    genedblist<-listDatasets(ensembl)
+  )
+} 
 orgsym=paste0(tolower(substr(phylo,1,1)),substr(phylo,gregexpr(" ",phylo)[[1]][1]+1,nchar(phylo)))
 orgindb=grep(orgsym,genedblist$dataset)
 #proceed to annotation if library exists for this organism, 
@@ -40,7 +58,15 @@ getUniProt=function (id)
 }
 
 #get ensembl library for the target organism 
-orgensdb=useDataset(genedblist$dataset[orgindb[1]],mart=ensembl)
+#orgensdb=useDataset(genedblist$dataset[orgindb[1]],mart=ensembl)
+orgensdb <- NULL
+attempt3 <- 0
+while( is.null(orgensdb) && attempt3 <= 100 ) {
+  attempt3 <- attempt3 + 1
+  try(
+    orgensdb<-useDataset(genedblist$dataset[orgindb[1]],mart=ensembl)
+  )
+} 
 #table(listAttributes(orgensdb)$page)
 #listAttributes(orgensdb)[listAttributes(orgensdb)$page=="feature_page",]
 #listAttributes(orgensdb)[listAttributes(orgensdb)$page=="homologs",]
@@ -66,21 +92,48 @@ return(cleaned)}))
 
 #clean protein accession and use it to extract other ID info for each entry 
 statsRes$Protein=pepalllabcleaned
-getgenename=getBM(attributes=c("uniprotsptrembl","external_gene_name","entrezgene_id","ensembl_gene_id","ensembl_peptide_id"),
-filters="uniprotsptrembl",values=unique(pepalllabcleaned),mart=orgensdb)
+getgenename <- NULL
+attempt4 <- 0
+while( is.null(getgenename) && attempt4 <= 100 ) {
+  attempt4 <- attempt4 + 1
+  try(
+    getgenename<-getBM(attributes=c("uniprotsptrembl","external_gene_name","entrezgene_id","ensembl_gene_id","ensembl_peptide_id"),
+	filters="uniprotsptrembl",values=unique(pepalllabcleaned),mart=orgensdb,useCache = FALSE)
+  )
+} 
+#getgenename=getBM(attributes=c("uniprotsptrembl","external_gene_name","entrezgene_id","ensembl_gene_id","ensembl_peptide_id"),
+#filters="uniprotsptrembl",values=unique(pepalllabcleaned),mart=orgensdb)
 #if protein info present from the input accession by searching the unreviewed protein ID ensembl page, 
 #for at least 1 entry, add reviewed ID column and get reviewed accession 
 if (nrow(getgenename)>0) {
 getgenename$uniprotswissprot=NA
-getswissprot=getBM(attributes=c("external_gene_name","uniprotswissprot"),
-filters="external_gene_name",values=unique(getgenename$external_gene_name),mart=orgensdb)
+getswissprot <- NULL
+attempt5 <- 0
+while( is.null(getswissprot) && attempt5 <= 100 ) {
+  attempt5 <- attempt5 + 1
+  try(
+    getswissprot<-getBM(attributes=c("external_gene_name","uniprotswissprot"),
+filters="external_gene_name",values=unique(getgenename$external_gene_name),mart=orgensdb,useCache = FALSE)
+  )
+}
+#getswissprot=getBM(attributes=c("external_gene_name","uniprotswissprot"),
+#filters="external_gene_name",values=unique(getgenename$external_gene_name),mart=orgensdb)
 getswissprot=getswissprot[which(getswissprot$uniprotswissprot!=""),]
 getgenename$uniprotswissprot[match(getswissprot$external_gene_name,getgenename$external_gene_name)]=
 getswissprot$uniprotswissprot
 } else {getgenename$uniprotswissprot=character()}
 #for accessions that didn't match any ID in unreviewed page, match them to the reviewed match and get other ID info 
-getgenename2=getBM(attributes=c("uniprotswissprot","external_gene_name","entrezgene_id","ensembl_gene_id","ensembl_peptide_id"),
-filters="uniprotswissprot",values=setdiff(unique(pepalllabcleaned),getgenename$uniprotsptrembl),mart=orgensdb)
+getgenename2 <- NULL
+attempt6 <- 0
+while( is.null(getgenename2) && attempt6 <= 100 ) {
+  attempt6 <- attempt6 + 1
+  try(
+    getgenename2<-getBM(attributes=c("uniprotswissprot","external_gene_name","entrezgene_id","ensembl_gene_id","ensembl_peptide_id"),
+filters="uniprotswissprot",values=setdiff(unique(pepalllabcleaned),getgenename$uniprotsptrembl),mart=orgensdb,useCache = FALSE)
+  )
+}
+#getgenename2=getBM(attributes=c("uniprotswissprot","external_gene_name","entrezgene_id","ensembl_gene_id","ensembl_peptide_id"),
+#filters="uniprotswissprot",values=setdiff(unique(pepalllabcleaned),getgenename$uniprotsptrembl),mart=orgensdb)
 
 #put together extracted IDs from both unreviewed and reviewed ID searches, 
 #and get protein sequence from reviewed accession
@@ -213,10 +266,27 @@ hsaattrlist=homologattr[grep("Human",homologattr$description),]$name
 accinput=list(unique(pepalllabcleaned[statsRes$accession_review_status=="No"]),
 unique(pepalllabcleaned[statsRes$accession_review_status=="Yes"]))
 #get info for each list by matching to library of unreviewed accession and library of reviewed accession 
-gethsainfo=getBM(attributes=c("external_gene_name","chromosome_name","start_position","end_position","strand",hsaattrlist),filters="uniprotsptrembl",
-values=accinput[[1]],mart=orgensdb)
-gethsainfo2=getBM(attributes=c("external_gene_name","chromosome_name","start_position","end_position","strand",hsaattrlist),filters="uniprotswissprot",
-values=accinput[[2]],mart=orgensdb)
+gethsainfo <- NULL
+attempt7 <- 0
+while( is.null(gethsainfo) && attempt7 <= 100 ) {
+  attempt7 <- attempt7 + 1
+  try(
+gethsainfo<-getBM(attributes=c("external_gene_name","chromosome_name","start_position","end_position","strand",hsaattrlist),filters="uniprotsptrembl",
+values=accinput[[1]],mart=orgensdb,useCache = FALSE)  )
+}
+#gethsainfo=getBM(attributes=c("external_gene_name","chromosome_name","start_position","end_position","strand",hsaattrlist),filters="uniprotsptrembl",
+#values=accinput[[1]],mart=orgensdb)
+gethsainfo2 <- NULL
+attempt8 <- 0
+while( is.null(gethsainfo2) && attempt8 <= 100 ) {
+  attempt8 <- attempt8 + 1
+  try(
+gethsainfo2<-getBM(attributes=c("external_gene_name","chromosome_name","start_position","end_position","strand",hsaattrlist),filters="uniprotswissprot",
+values=accinput[[2]],mart=orgensdb,useCache = FALSE) 
+)
+}
+#gethsainfo2=getBM(attributes=c("external_gene_name","chromosome_name","start_position","end_position","strand",hsaattrlist),filters="uniprotswissprot",
+#values=accinput[[2]],mart=orgensdb)
 #get ID and review info columns from dataset 
 resannot=statsRes[,c(1:6,match("accession_review_status",colnames(statsRes)):ncol(statsRes))]
 resannot$geneid=geneid
@@ -234,36 +304,117 @@ hsaannot=as.data.frame(cbind(resannot,hsainfoo))
 genereg=hsaannot[,match(c("geneid","peptideid","hsapiens_homolog_ensembl_gene","hsapiens_homolog_ensembl_peptide","accession_review_status"),colnames(hsaannot))]
 genereg$accession=pepalllabcleaned
 #load human library from ensembl 
-hsadb=useDataset(genedblist$dataset[grep("hsapiens",genedblist$dataset)],mart=ensembl)
+hsadb <- NULL
+attempt9 <- 0
+while( is.null(hsadb) && attempt9 <= 100 ) {
+  attempt9 <- attempt9 + 1
+  try(
+hsadb<-useDataset(genedblist$dataset[grep("hsapiens",genedblist$dataset)],mart=ensembl)
+)
+}
+#hsadb=useDataset(genedblist$dataset[grep("hsapiens",genedblist$dataset)],mart=ensembl)
 #get all non-NA accessions 
 goodrow1=which(genereg$accession_review_status=="No"&!is.na(genereg$accession))
 goodrow2=which(genereg$accession_review_status=="Yes"&!is.na(genereg$accession))
 #get coding sequence in nucleotide for all non-NA accessions 
-orgseq=getSequence(id=genereg$accession[goodrow1],type="uniprotsptrembl",seqType="coding",mart=orgensdb,verbose=FALSE)
+orgseq <- NULL
+attempt10 <- 0
+while( is.null(orgseq) && attempt10 <= 100 ) {
+  attempt10 <- attempt10 + 1
+  try(
+orgseq<-getSequence(id=genereg$accession[goodrow1],type="uniprotsptrembl",seqType="coding",mart=orgensdb,verbose=FALSE,useCache = FALSE)
+)
+}
+#orgseq=getSequence(id=genereg$accession[goodrow1],type="uniprotsptrembl",seqType="coding",mart=orgensdb,verbose=FALSE)
 colnames(orgseq)[2]="accession"
-orgseq2=getSequence(id=genereg$accession[goodrow2],type="uniprotswissprot",seqType="coding",mart=orgensdb,verbose=FALSE)
+orgseq2 <- NULL
+attempt11 <- 0
+while( is.null(orgseq2) && attempt11 <= 100 ) {
+  attempt11 <- attempt11 + 1
+  try(
+orgseq2<-getSequence(id=genereg$accession[goodrow2],type="uniprotswissprot",seqType="coding",mart=orgensdb,verbose=FALSE,useCache = FALSE)
+)
+}
+#orgseq2=getSequence(id=genereg$accession[goodrow2],type="uniprotswissprot",seqType="coding",mart=orgensdb,verbose=FALSE)
 colnames(orgseq2)[2]="accession"
 orgseqall=as.data.frame(rbind(orgseq,orgseq2))
 #combine with homolog info dataframe 
 hsaannot$coding_seq=orgseqall[match(genereg$accession,orgseqall$accession),"coding"]
 #get full nucleotide sequence for all accessions 
-orgseq3=getSequence(id=genereg$accession[goodrow1],type="uniprotsptrembl",seqType="gene_exon_intron",mart=orgensdb,verbose=FALSE)
+orgseq3 <- NULL
+attempt12 <- 0
+while( is.null(orgseq3) && attempt12 <= 100 ) {
+  attempt12 <- attempt12 + 1
+  try(
+orgseq3<-getSequence(id=genereg$accession[goodrow1],type="uniprotsptrembl",seqType="gene_exon_intron",mart=orgensdb,verbose=FALSE,useCache = FALSE)
+)
+}
+#orgseq3=getSequence(id=genereg$accession[goodrow1],type="uniprotsptrembl",seqType="gene_exon_intron",mart=orgensdb,verbose=FALSE)
 colnames(orgseq3)[2]="accession"
-orgseq4=getSequence(id=genereg$accession[goodrow2],type="uniprotswissprot",seqType="gene_exon_intron",mart=orgensdb,verbose=FALSE)
+orgseq4 <- NULL
+attempt13 <- 0
+while( is.null(orgseq4) && attempt13 <= 100 ) {
+  attempt13 <- attempt13 + 1
+  try(
+orgseq4<-getSequence(id=genereg$accession[goodrow2],type="uniprotswissprot",seqType="gene_exon_intron",mart=orgensdb,verbose=FALSE,useCache = FALSE)
+)
+}
+#orgseq4=getSequence(id=genereg$accession[goodrow2],type="uniprotswissprot",seqType="gene_exon_intron",mart=orgensdb,verbose=FALSE)
 colnames(orgseq4)[2]="accession"
 orgseqall2=as.data.frame(rbind(orgseq3,orgseq4))
 #hsaannot$full_gene_seq=orgseqall2[match(genereg$accession,orgseqall2$accession),"gene_exon_intron"]
 #remove NA and empty entries from extracted homolog 
 hsaaccinpclean=genereg$hsapiens_homolog_ensembl_peptide[!is.na(genereg$hsapiens_homolog_ensembl_peptide)&genereg$hsapiens_homolog_ensembl_peptide!=""]
 #get accession ID and ensembl sequence id for human 
-hsaacc=getBM(attributes=c("uniprotsptrembl","uniprotswissprot","ensembl_peptide_id"),
-filters="ensembl_peptide_id",values=hsaaccinpclean,mart=hsadb)
+hsaacc <- NULL
+attempt14 <- 0
+while( is.null(hsaacc) && attempt14 <= 100 ) {
+  attempt14 <- attempt14 + 1
+  try(
+hsaacc<-getBM(attributes=c("uniprotsptrembl","uniprotswissprot","ensembl_peptide_id"),
+filters="ensembl_peptide_id",values=hsaaccinpclean,mart=hsadb,useCache = FALSE)
+)
+}
+#hsaacc=getBM(attributes=c("uniprotsptrembl","uniprotswissprot","ensembl_peptide_id"),
+#filters="ensembl_peptide_id",values=hsaaccinpclean,mart=hsadb)
 
 #get coding nucleotide sequence and full nucleotide sequence for human homolog 
-hsaseq=getSequence(id=hsaacc$uniprotsptrembl[hsaacc$uniprotsptrembl!=""],type="uniprotsptrembl",seqType="coding",mart=hsadb,verbose=FALSE)
-hsaseq2=getSequence(id=hsaacc$uniprotswissprot[hsaacc$uniprotswissprot!=""],type="uniprotswissprot",seqType="coding",mart=hsadb,verbose=FALSE)
-hsaseq3=getSequence(id=hsaacc$uniprotsptrembl[hsaacc$uniprotsptrembl!=""],type="uniprotsptrembl",seqType="gene_exon_intron",mart=hsadb,verbose=FALSE)
-hsaseq4=getSequence(id=hsaacc$uniprotswissprot[hsaacc$uniprotswissprot!=""],type="uniprotswissprot",seqType="gene_exon_intron",mart=hsadb,verbose=FALSE)
+hsaseq <- NULL
+attempt15 <- 0
+while( is.null(hsaseq) && attempt15 <= 100 ) {
+  attempt15 <- attempt15 + 1
+  try(
+hsaseq<-getSequence(id=hsaacc$uniprotsptrembl[hsaacc$uniprotsptrembl!=""],type="uniprotsptrembl",seqType="coding",mart=hsadb,verbose=FALSE,useCache = FALSE)
+)
+}
+#hsaseq=getSequence(id=hsaacc$uniprotsptrembl[hsaacc$uniprotsptrembl!=""],type="uniprotsptrembl",seqType="coding",mart=hsadb,verbose=FALSE)
+hsaseq2 <- NULL
+attempt16 <- 0
+while( is.null(hsaseq2) && attempt16 <= 100 ) {
+  attempt16 <- attempt16 + 1
+  try(
+hsaseq2<-getSequence(id=hsaacc$uniprotswissprot[hsaacc$uniprotswissprot!=""],type="uniprotswissprot",seqType="coding",mart=hsadb,verbose=FALSE,useCache = FALSE)
+)
+}
+#hsaseq2=getSequence(id=hsaacc$uniprotswissprot[hsaacc$uniprotswissprot!=""],type="uniprotswissprot",seqType="coding",mart=hsadb,verbose=FALSE)
+hsaseq3 <- NULL
+attempt17 <- 0
+while( is.null(hsaseq3) && attempt17 <= 100 ) {
+  attempt17 <- attempt17 + 1
+  try(
+hsaseq3<-getSequence(id=hsaacc$uniprotsptrembl[hsaacc$uniprotsptrembl!=""],type="uniprotsptrembl",seqType="gene_exon_intron",mart=hsadb,verbose=FALSE,useCache = FALSE)
+)
+}
+#hsaseq3=getSequence(id=hsaacc$uniprotsptrembl[hsaacc$uniprotsptrembl!=""],type="uniprotsptrembl",seqType="gene_exon_intron",mart=hsadb,verbose=FALSE)
+hsaseq4 <- NULL
+attempt18 <- 0
+while( is.null(hsaseq4) && attempt18 <= 100 ) {
+  attempt18 <- attempt18 + 1
+  try(
+hsaseq4<-getSequence(id=hsaacc$uniprotswissprot[hsaacc$uniprotswissprot!=""],type="uniprotswissprot",seqType="gene_exon_intron",mart=hsadb,verbose=FALSE,useCache = FALSE)
+)
+}
+#hsaseq4=getSequence(id=hsaacc$uniprotswissprot[hsaacc$uniprotswissprot!=""],type="uniprotswissprot",seqType="gene_exon_intron",mart=hsadb,verbose=FALSE)
 colnames(hsaseq)[2]="accession"
 colnames(hsaseq2)[2]="accession"
 colnames(hsaseq3)[2]="accession"
