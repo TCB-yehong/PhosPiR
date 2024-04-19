@@ -7,6 +7,8 @@ if(!require(gtools)){install.packages("gtools")}
 library(gtools)
 if(!require(gridExtra)){install.packages("gridExtra")}
 library(gridExtra)
+if(!require(cmapR)){BiocManager::install("cmapR",update=F,ask=F)}
+library(cmapR)
 ################################################################################
 
 #######################test structure setup#####################################
@@ -633,4 +635,50 @@ blankPlot <- ggplot()+geom_blank(aes(1,1))+
 return(
 grid.arrange(xdensity, blankPlot, volcano, ydensity, 
         ncol=2, nrow=2, widths=c(4, 1.4), heights=c(1.4, 4)))}
+################################################################################
+
+#################generate result file with annotations##########################
+gctmake=function(annotpepdf,annotsampdf,rawdatafile,statsRes,grpcompare) {
+datadf=as.matrix(rawdatafile[,-c(1:6)])
+rownames(datadf)=as.character(1:nrow(datadf))
+statInfo=statsRes[,(ncol(rawdatafile)+1):ncol(statsRes)]
+if (!is.null(annotpepdf)) {
+annotpdf=as.data.frame(cbind(rawdatafile[,1:6],annotpepdf,statInfo))
+} else {
+annotpdf=as.data.frame(cbind(rawdatafile[,1:6],statInfo))
+}
+
+grpcomparemtx=c()
+grpcomparecol=c()
+for (i in 1:length(grpcompare)) {
+grpcomparecol=c(grpcomparecol,paste0("Comparison ",i))
+tempgrpmtx=rep("",times=ncol(datadf))
+tempgrpmtx[grpcompare[[i]]$intcol]=as.character(grpcompare[[i]][,2])
+grpcomparemtx=cbind(grpcomparemtx,tempgrpmtx)
+}
+grpcomparedf=as.data.frame(grpcomparemtx)
+colnames(grpcomparedf)=grpcomparecol
+
+if (!is.null(annotsampdf)) {
+annotsampmtx=c()
+annotrowidx=match(colnames(datadf),make.names(annotsampdf[,1]))
+for (i in annotrowidx) {
+if (is.na(i)) {
+tempsamp=rep("",times=ncol(annotsampdf))
+annotsampmtx=rbind(annotsampmtx,tempsamp)
+} else {
+tempsamp=annotsampdf[i,]
+annotsampmtx=rbind(annotsampmtx,tempsamp)
+}
+}
+annotsampfdf=as.data.frame(annotsampmtx)
+colnames(annotsampfdf)=colnames(annotsampdf)
+annotsdf=data.frame(annotsampfdf,grpcomparedf)
+} else {
+annotsdf=grpcomparedf
+}
+statRes_ds = new("GCT", mat=datadf, rdesc=annotpdf, cdesc=annotsdf)
+write_gct(statRes_ds, "Statistical Analysis/analysis_results_with_annotation_file")
+return(statRes_ds)
+}
 ################################################################################

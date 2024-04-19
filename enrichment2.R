@@ -40,6 +40,32 @@ library(KEGG.db)
 if(!require(genodb,character.only=T)){BiocManager::install(genodb,update=F,ask=F)}
 library(genodb,character.only=T)
 
+#if running data has not been setup for any reason, add variable that's usually imported from statistialAnalysis step 
+if (sum(grepl("statsRes",ls()))==0) {statsRes=rawdatafile}
+
+#protein accession cleaning function when there are more than 1 accession 
+#present in protein accession column
+pepalllabcleaned=unlist(lapply(statsRes$Protein ,FUN=function(x) {
+cleaned=c()
+if (!is.na(x)) {
+temp=strsplit(x,";|,|, ")
+for (k in 1:length(temp)) {
+	if (sum(nchar(temp[[k]])<7)>0) {
+cleaned=c(cleaned,temp[[k]][which(nchar(temp[[k]])<7)[1]])} 
+	else if (grepl("-",temp[[k]][1])){
+cleaned=c(cleaned,substr(temp[[k]][1],1,(gregexpr("-",temp[[k]][1])[[1]][1]-1)))}
+	else {cleaned=c(cleaned,temp[[k]][1])}
+#choose the first one that's uniprot 6-symbol acc., if none, return first, if first has sub category, remove sub
+} } else {cleaned=c(cleaned,NA)}
+return(cleaned)}))
+
+statsRes$Protein=pepalllabcleaned
+
+#get Entrez ID 
+if (!('entrez_id' %in% colnames(statsRes))) {
+entrezdf=bitr(pepalllabcleaned, fromType="UNIPROT", toType="ENTREZID", OrgDb=eval(as.name(genodb)))
+statsRes$entrez_id=entrezdf$ENTREZID[match(pepalllabcleaned,entrezdf$UNIPROT)]}
+
 #set up background data & datalist data
 allgeneid=statsRes$entrez_id
 #read sig lists
@@ -253,7 +279,7 @@ for (i in 1:length(genesets)) {
 		
 if (!is.null(nrow(kk2))) {		
 	if (nrow(kk2)>0) {
-		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk3)
+		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk2)
 		wd=3.5+max(nchar(kk2$Description))/4+(15/(5+log(nrow(kk2),base=1.22)))
 		fname=paste0(names(genesets)[[i]],"_GO_",j,"_enrichment_dotplot_bgdata.tiff")
 		ftitle=paste0(names(genesets)[[i]],"_GO_",j,"_dataBackground")
@@ -307,7 +333,7 @@ kk3 <- enrichDO(gene          = names(genesets[[i]]),
 
 if (!is.null(nrow(kk3))) {	
 	if (nrow(kk2)>0) {
-		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk3)
+		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk2)
 		wd=3+max(nchar(kk2$Description))/4+(15/(5+log(nrow(kk2),base=1.22)))
 		fname=paste0(names(genesets)[[i]],"_DOSE_enrichment_dotplot_bgdata.tiff")
 		ftitle=paste0(names(genesets)[[i]],"_DOSE_dataBackground")
@@ -336,26 +362,29 @@ if (!is.null(nrow(kk3))) {
 #See KEGG enrichment section for specific code descriptions 
 if (phylo %in% c("Sus scrofa","Anopheles gambiae","Arabidopsis thaliana","Bos taurus",
 "Caenorhabditis elegans","Canis familiaris","Danio rerio","Drosophila melanogaster","Gallus gallus",
-"Pan troglodytes","Rattus norvegicus","Saccharomyces cerevisiae")) {
+"Pan troglodytes","Rattus norvegicus","Saccharomyces cerevisiae", "Anopheles gambiae", "Equus caballus",
+"Populus trichocarpa", "Pan troglodytes","Oryza sativa")) {
+
 setwd(wddflt)
 dir.create("Enrichment/Wikipathway enrichment",showWarnings=F)
 setwd(paste0(wddflt,"/Enrichment/Wikipathway enrichment"))
-URLwikidir="http://data.wikipathways.org/current/gmt/"
-wikiline=readLines(URLwikidir)
-wikilist=gsub(" ","",gsub("<.*?>","",wikiline))
-wikidbname=wikilist[grep(gsub(" ","_",phylo),wikilist)]
-download.file(paste0(URLwikidir,wikidbname),wikidbname)
+#URLwikidir="http://data.wikipathways.org/current/gmt/"
+#wikiline=readLines(URLwikidir)
+#wikilist=gsub(" ","",gsub("<.*?>","",wikiline))
+#wikidbname=wikilist[grep(gsub(" ","_",phylo),wikilist)]
+#download.file(paste0(URLwikidir,wikidbname),wikidbname)
 
-wp2gene <- read.gmt(wikidbname)
-wp2gene <- wp2gene %>% tidyr::separate(term, c("name","version","wpid","org"), "%")
-wpid2gene <- wp2gene %>% dplyr::select(wpid, gene) 
-wpid2name <- wp2gene %>% dplyr::select(wpid, name) 
+#wp2gene <- read.gmt(wikidbname)
+#wp2gene <- wp2gene %>% tidyr::separate(term, c("name","version","wpid","org"), "%")
+#wpid2gene <- wp2gene %>% dplyr::select(wpid, gene) 
+#wpid2name <- wp2gene %>% dplyr::select(wpid, name) 
 
 for (i in 1:length(genesets)) {
-kk2 <- enricher(names(genesets[[i]]), TERM2GENE = wpid2gene, TERM2NAME = wpid2name,minGSSize = 5)
+#kk2 <- enricher(names(genesets[[i]]), TERM2GENE = wpid2gene, TERM2NAME = wpid2name,minGSSize = 5)
+kk2=enrichWP(names(genesets[[i]]), organism = phylo) 
 	if (!is.null(nrow(kk2))) {
 		if (nrow(kk2)>0) {
-		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk3)
+		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk2)
 		wd=3+max(nchar(kk2$Description))/4+(15/(5+log(nrow(kk2),base=1.22)))
 		fname=paste0(names(genesets)[[i]],"_Wikipathway_enrichment_dotplot.tiff")
 		ftitle=paste0(names(genesets)[[i]],"_Wikipathway Enrichment")
@@ -365,6 +394,8 @@ kk2 <- enricher(names(genesets[[i]]), TERM2GENE = wpid2gene, TERM2NAME = wpid2na
 		dev.off()
 		fname2=paste0(names(genesets)[[i]],"_Wikipathway_enrichmentResult.csv")
 		write.csv(kk2,file=fname2)}}
+		
+
 }
 if(length(dir(all.files=TRUE))<=3) {
 setwd(wddflt)

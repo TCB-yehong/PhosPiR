@@ -48,10 +48,29 @@ wddflt=getwd()
 fileType=dlgList(c("MaxQaunt","Other"),title="Choose input file source")$res
 if (fileType=="MaxQaunt") {
 fname=dlg_open(title = "Select MaxQuant result file \'Phospho(STY)Sites\' for input",multiple=F)$res
+annotpep=NULL
+annotsamp=NULL
 } else {
 fname=dlg_open(title = "Select input file with correct format (.csv or .xlsx)",multiple=F)$res
+#add annotation file input option if file is not from maxquant
+annotFA=dlgList(c("No annotation files","Row (peptide) annotation available",
+"Column (sample) annotation available","Both annotations available"),title="Add annotation files?")$res
+if (annotFA=="Both annotations available") {
+annotpep=dlg_open(title = "Select row (peptide) annotation file (.csv)",multiple=F)$res
+annotsamp=dlg_open(title = "Select column (sample) annotation file (.csv)",multiple=F)$res
+} else if (annotFA=="Row (peptide) annotation available"){
+annotpep=dlg_open(title = "Select row (peptide) annotation file (.csv)",multiple=F)$res
+annotsamp=NULL
+} else if (annotFA=="Column (sample) annotation available"){
+annotpep=NULL
+annotsamp=dlg_open(title = "Select column (sample) annotation file (.csv)",multiple=F)$res
+} else {
+annotpep=NULL
+annotsamp=NULL
+}
 }
 ################################################################################
+
 
 #######################run option###############################################
 #setup which step to run
@@ -124,6 +143,8 @@ rawdatafile$Reverse[is.na(rawdatafile$Reverse)]=""
 rawdatafile$Potential.contaminant[is.na(rawdatafile$Potential.contaminant)]=""
 rawdatafile=rawdatafile[which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant==""),-c(7,8)]
 rawinfofile=rawinfofile[which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant==""),]
+annotpepdf=NULL
+annotsampdf=NULL
 } else {
 #read input file from 'Other' based on whether it's a csv or xlsx file 
 fnameparts=strsplit(fname,"\\.")[[1]]
@@ -134,6 +155,25 @@ rawdatafile=read.xlsx(fname,sheet=1,check.names=T)
 } else {
 dlg_message("Only .csv and .xslx formats are supported!")
 }
+
+if (!is.null(annotpep)) {
+annotpepparts=strsplit(annotpep,"\\.")[[1]]
+if (annotpepparts[length(annotpepparts)]=="csv") {
+annotpepdf=read.csv(annotpep,stringsAsFactors=F)
+} else {
+dlg_message("Only .csv format is supported for row annotation file!")
+annotpepdf=NULL
+} } else {annotpepdf=NULL}
+
+if (!is.null(annotsamp)) {
+annotsampparts=strsplit(annotsamp,"\\.")[[1]]
+if (annotsampparts[length(annotsampparts)]=="csv") {
+annotsampdf=read.csv(annotsamp,stringsAsFactors=F)
+} else {
+dlg_message("Only .csv format is supported for column annotation file!")
+annotsampdf=NULL
+} } else {annotsampdf=NULL}
+
 
 colnames(rawdatafile)[1:6]=c("Protein","Protein.names","Gene.names","Amino.acid","Position","Sequence.window")
 msg_box("Please make sure the file follows the described
@@ -175,6 +215,9 @@ if (rcoff=="Remove rows with missing value >50%") {rcoffv=0.5
 rpass=apply(rintfile,1,FUN=function(x) (sum(x==0)/length(x))<rcoffv)
 rintfile=rintfile[which(rpass),]
 rawdatafile=rawdatafile[which(rpass),]
+if (!is.null(annotpepdf)) {
+annotpepdf=annotpepdf[which(rpass),]
+}
 if (exists("rawinfofile")) {
 rawinfofile=rawinfofile[which(rpass),]}
 }
@@ -204,7 +247,7 @@ if (pipestep!="Generate Special Input File"&pipestep!="Overview Figures") {
 phylo=dlgList(c("Homo sapiens","Mus musculus","Rattus norvegicus",
 "Saccharomyces cerevisiae","Caenorhabditis elegans","Danio rerio",
 "Drosophila melanogaster","Escherichia coli","Arabidopsis thaliana",
-"Other"),preselect="Homo sapien",title="Select data organism source")$res
+"Other"),preselect="Homo sapiens",title="Select data organism source")$res
 if(phylo=="Other") {phylo=dlgInput("Please enter organism scientific name: (Capitalize first 
 letter and nothing else, space between words)")$res}}
 

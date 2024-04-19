@@ -33,6 +33,7 @@ winlen=min(nchar(kinasefile[,2]))
 pwms=buildPWM(kinasefile,substrate_length=winlen)
 
 for (i in 1:length(grpcompare)) {
+missinfo=c()
 #for each comparison, if stats result of the comparison include user selected p-val and a fold change,
 #put ID annotation, sequence window, fold change and selected pval for the dataset in a dataframe 
 if (paste0("Comparison",i,"_FoldChange") %in% colnames(statsRes)&
@@ -52,7 +53,9 @@ peptide=seq.window2,
 fc=statsRes[,match(paste0("Comparison",i,"_FoldChange"),colnames(statsRes))],
 pval=statsRes[,which(grepl(paste0("Comparison",i),colnames(statsRes))&grepl("Pvalue|FDR|PFP",colnames(statsRes)))[1]])
 #if the comparison doesn't include enough stats parameters, return empty dataframe variable
-} else {kinstat=NULL}
+} else {kinstat=NULL
+missinfo=rbind(missinfo,paste("Comparison ",i," doesnt have enough info: missing FC or pval/FDR/PFP."))
+}
 
 if (!is.null(kinstat)) {
 register(SnowParam(workers = detectCores()))
@@ -116,7 +119,9 @@ if (nrow(sigkinnet)>0) {
 write.csv(sigkinnet,paste0("Kinase Analysis/Comparison",i,"_significant_kinaseNetwork.csv"),row.names=F)}
 }
 }
-}}
+}} 
+missinfo=as.data.frame(missinfo)
+write.csv(missinfo,"failed_due_to_information_missing.csv")
 }
 
 
