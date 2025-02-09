@@ -141,8 +141,9 @@ write.csv(rawinfofile,"Raw File/maxquant_raw_info.csv",row.names=F)
 #remove reverse and contaminant entries
 rawdatafile$Reverse[is.na(rawdatafile$Reverse)]=""
 rawdatafile$Potential.contaminant[is.na(rawdatafile$Potential.contaminant)]=""
-rawdatafile=rawdatafile[which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant==""),-c(7,8)]
-rawinfofile=rawinfofile[which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant==""),]
+row.filt <- which(rawdatafile$Reverse==""&rawdatafile$Potential.contaminant=="")                    
+rawdatafile=rawdatafile[row.filt,-c(7,8)]
+rawinfofile=rawinfofile[row.filt,]
 annotpepdf=NULL
 annotsampdf=NULL
 } else {
