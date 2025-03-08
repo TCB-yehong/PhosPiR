@@ -187,15 +187,23 @@ kk3=enrichKEGG(gene = names(genesets[[i]]),
 if (!is.null(nrow(kk2))) {	   
 if (nrow(kk2)>0) {
 n=n+1
+if (nrow(kk2)>30) {
+kkdp=kk2[1:30,]
+} else {
+kkdp=kk2
+}
 #auto adjust figure size based on number of sig pathway hits (formula created through repeated testing specfically for this)
-ht=5+log(nrow(kk2),base=1.4)
-wd=2.5+max(nchar(kk2$Description))/4+(15/(5+log(nrow(kk2),base=1.22)))
+ht=5+log(nrow(kkdp),base=1.4)
+wd=2.5+max(nchar(kkdp$Description))/4+(15/(5+log(nrow(kkdp),base=1.22)))
 #setup tiff parameters and create tiff 
-fname=paste0(names(genesets)[[i]],"_KEGG_enrichment_dotplot_bgdata.tiff")
+if (nrow(kk2)==nrow(kkdp)) {
+fname=paste0(names(genesets)[[i]],"_KEGG_enrichment_dotplot_bgdata.tiff")} else {
+fname=paste0(names(genesets)[[i]],"_KEGG_enrichment_dotplot_bgdata_top30.tiff")
+}
 ftitle=paste0(names(genesets)[[i]],"_dataBackground")
-catcount=nrow(kk2)
+catcount=nrow(kkdp)
 tiff(filename =fname, units="in", width=wd, height=ht, res=100)
-print(dotplot(kk2,showCategory = catcount,title=ftitle))
+print(dotplot(kkdp,showCategory = catcount,title=ftitle))
 dev.off()
 #create csv file to record result 
 fname2=paste0(names(genesets)[[i]],"_dataBackground_KEGGenrichmentResult.csv")
@@ -223,13 +231,21 @@ writeData(plink,sheet=1,x=kklink,startCol=n,startRow=2)
 if (!is.null(nrow(kk3))) {	  
 if (nrow(kk3)>0) {
 n=n+1
-ht=3+log(nrow(kk3),base=1.4)
-wd=2.5+max(nchar(kk3$Description))/4+(15/(5+log(nrow(kk3),base=1.22)))
-fname=paste0(names(genesets)[[i]],"_KEGG_enrichment_dotplot_bgall.tiff")
+if (nrow(kk3)>30) {
+kkdp3=kk3[1:30,]
+} else {
+kkdp3=kk3
+}
+ht=3+log(nrow(kkdp3),base=1.4)
+wd=2.5+max(nchar(kkdp3$Description))/4+(15/(5+log(nrow(kkdp3),base=1.22)))
+if (nrow(kk3)==nrow(kkdp3)) {
+fname=paste0(names(genesets)[[i]],"_KEGG_enrichment_dotplot_bgall.tiff")} else {
+fname=paste0(names(genesets)[[i]],"_KEGG_enrichment_dotplot_bgall_top30.tiff")
+}
 ftitle=paste0(names(genesets)[[i]],"_universalBackground")
-catcount=nrow(kk3)
+catcount=nrow(kkdp3)
 tiff(filename =fname, units="in", width=wd, height=ht, res=100)
-print(dotplot(kk3,showCategory = catcount,title=ftitle))
+print(dotplot(kkdp3,showCategory = catcount,title=ftitle))
 dev.off()
 fname2=paste0(names(genesets)[[i]],"_universalBackground_KEGGenrichmentResult.csv")
 write.csv(kk3,file=fname2)
@@ -279,25 +295,41 @@ for (i in 1:length(genesets)) {
 		
 if (!is.null(nrow(kk2))) {		
 	if (nrow(kk2)>0) {
-		ht=5+log(nrow(kk2),base=1.4)+1.016^nrow(kk2)
-		wd=3.5+max(nchar(kk2$Description))/4+(15/(5+log(nrow(kk2),base=1.22)))
-		fname=paste0(names(genesets)[[i]],"_GO_",j,"_enrichment_dotplot_bgdata.tiff")
+		if (nrow(kk2)>50) {
+			kkdp=kk2[1:50,]
+			} else {
+			kkdp=kk2
+			}
+		ht=5+log(nrow(kkdp),base=1.4)+1.016^nrow(kkdp)
+		wd=3.5+max(nchar(kkdp$Description))/4+(15/(5+log(nrow(kkdp),base=1.22)))
+		if (nrow(kk2)==nrow(kkdp)) {
+			fname=paste0(names(genesets)[[i]],"_GO_",j,"_enrichment_dotplot_bgdata.tiff")} else {
+			fname=paste0(names(genesets)[[i]],"_GO_",j,"_enrichment_dotplot_bgdata_top50.tiff")
+		}
 		ftitle=paste0(names(genesets)[[i]],"_GO_",j,"_dataBackground")
-		catcount=nrow(kk2)
+		catcount=nrow(kkdp)
 		tiff(filename =fname, units="in", width=wd, height=ht, res=100)
-		print(dotplot(kk2,showCategory = catcount,title=ftitle))
+		print(dotplot(kkdp,showCategory = catcount,title=ftitle))
 		dev.off()
 		fname2=paste0(names(genesets)[[i]],"_dataBackground_GO_",j,"_enrichmentResult.csv")
 		write.csv(kk2,file=fname2)}}
 if (!is.null(nrow(kk3))) {			
 	if (nrow(kk3)>0) {
-		ht=3+log(nrow(kk3),base=1.4)+1.016^nrow(kk3)
-		wd=3.5+max(nchar(kk3$Description))/4+(15/(5+log(nrow(kk3),base=1.22)))
-		fname=paste0(names(genesets)[[i]],"_GO_",j,"_enrichment_dotplot_bgall.tiff")
+		if (nrow(kk3)>50) {
+			kkdp3=kk3[1:50,]
+		} else {
+			kkdp3=kk3
+		}
+		ht=3+log(nrow(kkdp3),base=1.4)+1.016^nrow(kkdp3)
+		wd=3.5+max(nchar(kkdp3$Description))/4+(15/(5+log(nrow(kkdp3),base=1.22)))
+		if (nrow(kk3)==nrow(kkdp3)) {
+			fname=paste0(names(genesets)[[i]],"_GO_",j,"_enrichment_dotplot_bgall.tiff")} else {
+			fname=paste0(names(genesets)[[i]],"_GO_",j,"_enrichment_dotplot_bgall_top50.tiff")
+		}
 		ftitle=paste0(names(genesets)[[i]],"_GO_",j,"_universalBackground")
-		catcount=nrow(kk3)
+		catcount=nrow(kkdp3)
 		tiff(filename =fname, units="in", width=wd, height=ht, res=100)
-		print(dotplot(kk3,showCategory = catcount,title=ftitle))
+		print(dotplot(kkdp3,showCategory = catcount,title=ftitle))
 		dev.off()
 		fname2=paste0(names(genesets)[[i]],"_universalBackground_GO_",j,"_enrichmentResult.csv")
 		write.csv(kk3,file=fname2)}}

@@ -265,7 +265,7 @@ gap=10*(3/length(unique(knwgrp)))+0.3
 choralpha=0.5
 
 #figure size adjusted automatically 
-wd=10+(length(knwgrp)-20)*0.1
+wd=14+(length(knwgrp)-20)*0.2
 if (wd>75) {wd=75}
 ht=wd
 
@@ -302,6 +302,68 @@ dev.off()
 #a second style circosplot with larger labels is created and saved in tiff figure file 
 fname=paste0("Network/",substring(tgtname,1,gregexpr("\\.",tgtname)[[1]][1]-1),"_ChordDiagram_style2.tiff")
 tiff(filename =fname, units="in", width=wd, height=ht, compression="lzw",res=300)
+chordDiagram(tempknwinfo,group = knwgrp,transparency = choralpha,big.gap = gap,
+    annotationTrack = c("grid", "axis"),
+    preAllocateTracks = list(
+        list(track.height = max(strwidth(c(tempknwinfo$kinase,tempknwinfo$site)))*5),
+        list(track.height =max(strwidth(names(knwgrp)))*3, track.margin = c(0, 0))
+))
+circos.track(track.index = 1, panel.fun = function(x, y) {
+    circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, cex=4.5,
+        facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+}, bg.border = NA)
+circos.track(track.index = 3, panel.fun = function(x, y) {
+    sector.index = get.cell.meta.data("sector.index")
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    circos.text(mean(xlim), mean(ylim), sector.index, cex = 0.6, col="cyan", niceFacing = TRUE)
+}, bg.border = NA)
+for (j in 1:length(unique(knwgrp))) {
+if (unique(knwgrp)[j]=="Kinase"){
+highlight.sector(names(knwgrp[which(knwgrp==unique(knwgrp)[j])]), track.index = 2, cex = 4,col = "darkgoldenrod4",
+    text = unique(knwgrp)[j],  text.col = "white", niceFacing = TRUE
+	)
+} else {
+highlight.sector(names(knwgrp[which(knwgrp==unique(knwgrp)[j])]), track.index = 2, cex = 2.6,col = "aquamarine4",
+    text = unique(knwgrp)[j],  text.col = "white", niceFacing = TRUE,facing = "clockwise")
+}
+}
+circos.clear()
+dev.off()
+
+#pdf figure is created for circosplot 
+fname=paste0("Network/",substring(tgtname,1,gregexpr("\\.",tgtname)[[1]][1]-1),"_ChordDiagram.pdf")
+pdf(fname, width=wd, height=ht)
+#making the actual circosplot 
+chordDiagram(tempknwinfo,group = knwgrp,transparency = choralpha,big.gap = gap,
+    annotationTrack = c("grid", "axis"),
+    preAllocateTracks = list(
+        track.height = mm_h(4),
+        track.margin = c(mm_h(4), 0)
+))
+circos.track(track.index = 2, panel.fun = function(x, y) {
+    sector.index = get.cell.meta.data("sector.index")
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    circos.text(mean(xlim), mean(ylim), sector.index, cex = 0.6, col="cyan", niceFacing = TRUE)
+}, bg.border = NA)
+for (j in 1:length(unique(knwgrp))) {
+if (unique(knwgrp)[j]=="Kinase"){
+highlight.sector(names(knwgrp[which(knwgrp==unique(knwgrp)[j])]), track.index = 1, cex = 0.8,col = "darkgoldenrod4",
+    text = unique(knwgrp)[j],  text.col = "white", niceFacing = TRUE)
+} else {
+highlight.sector(names(knwgrp[which(knwgrp==unique(knwgrp)[j])]), track.index = 1, cex = 0.8,col = "aquamarine4",
+    text = unique(knwgrp)[j],  text.col = "white", niceFacing = TRUE)
+}
+}
+circos.clear()
+dev.off()
+
+
+
+#a second style circosplot with larger labels is created and saved in pdf figure file 
+fname=paste0("Network/",substring(tgtname,1,gregexpr("\\.",tgtname)[[1]][1]-1),"_ChordDiagram_style2.pdf")
+pdf(fname, width=wd, height=ht)
 chordDiagram(tempknwinfo,group = knwgrp,transparency = choralpha,big.gap = gap,
     annotationTrack = c("grid", "axis"),
     preAllocateTracks = list(
